@@ -87,20 +87,20 @@ export function PatientDashboard() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 md:py-8 lg:py-10">
+    <>
       {isCritical && <CriticalBanner />}
 
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm text-muted-foreground">{todayLabel}</p>
-          <h1 className="mt-1 text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="mt-1 text-balance text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl">
             {t("dashboard.greeting", { name: firstName + (locale === "uz" ? " opa" : "") })}
           </h1>
         </div>
-        <Button asChild variant="outline" className="rounded-full">
-          <Link href="/medications/new">
-            <Plus className="mr-1 size-4" />
-            {t("dashboard.addMedication")}
+        <Button asChild variant="outline" size="sm" className="shrink-0 rounded-full sm:size-default">
+          <Link href="/medications/add">
+            <Plus className="size-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t("dashboard.addMedication")}</span>
           </Link>
         </Button>
       </header>
@@ -199,16 +199,16 @@ export function PatientDashboard() {
         type="button"
         onClick={() => router.push("/chat")}
         className={cn(
-          "fixed bottom-20 right-4 z-30 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-105 active:scale-95",
+          "fixed bottom-20 right-4 z-30 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-105 active:scale-95 sm:px-5",
           "lg:bottom-8 lg:right-8",
           isCritical && "animate-pulse-ring",
         )}
         aria-label={t("dashboard.aiCompanion")}
       >
         <MessageCircle className="size-4" />
-        <span className="text-sm font-semibold">{t("dashboard.aiCompanion")}</span>
+        <span className="hidden text-sm font-semibold sm:inline">{t("dashboard.aiCompanion")}</span>
       </button>
-    </div>
+    </>
   )
 }
 

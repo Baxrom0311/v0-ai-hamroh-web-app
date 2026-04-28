@@ -5,7 +5,7 @@ export const metadata = { title: "AI suhbat — AI Hamroh" }
 
 export default function ChatPage() {
   return (
-    <AppShell requireRole="patient">
+    <AppShell requireRole="patient" flush>
       <ChatView />
     </AppShell>
   )

@@ -12,8 +12,8 @@ export function PublicNav() {
   const { isAuthenticated, user } = useAuth()
 
   const homeFor = (role: string | undefined) => {
-    if (role === "doctor") return "/doctor-dashboard"
-    if (role === "family") return "/family-dashboard"
+    if (role === "doctor") return "/doctor"
+    if (role === "family") return "/family"
     return "/dashboard"
   }
 

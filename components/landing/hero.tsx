@@ -94,7 +94,10 @@ function HeroPreview() {
         : "Don't worry about fatigue — it's normal. Let's not skip a dose."
 
   return (
-    <div className="relative">
+    // Bottom padding reserves vertical room for the absolutely-positioned
+    // chat-bubble overlay so it isn't clipped by the section's overflow-hidden
+    // on mobile.
+    <div className="relative pb-16 sm:pb-20">
       <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-xl shadow-primary/5 sm:p-6">
         <div className="flex items-center justify-between">
           <div>

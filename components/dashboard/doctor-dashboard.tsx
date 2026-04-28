@@ -161,12 +161,12 @@ function PatientRow({
           <Sparkline data={patient.trend} className="text-primary" width={70} height={26} />
         </div>
 
-        <div className="text-right">
-          <p className="text-xl font-semibold tabular-nums leading-none">{patient.adherenceRate}%</p>
+        <div className="text-right shrink-0">
+          <p className="text-lg font-semibold tabular-nums leading-none sm:text-xl">{patient.adherenceRate}%</p>
           <RiskIndicator level={patient.risk} size="sm" className="mt-1.5" />
         </div>
 
-        <ChevronRight className="size-5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        <ChevronRight className="hidden size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block" />
       </div>
     </li>
   )

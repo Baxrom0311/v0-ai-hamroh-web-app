@@ -256,9 +256,9 @@ export function ChatView() {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100svh-4rem-4rem)] w-full max-w-3xl flex-col px-0 sm:px-4 lg:h-[calc(100svh-4rem)]">
+    <div className="mx-auto flex h-[calc(100svh-4rem-4rem)] w-full max-w-3xl flex-col px-0 sm:h-[calc(100svh-4rem-4rem)] sm:px-4 lg:h-[calc(100svh-4rem)]">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border/60 bg-card px-4 py-3 sm:rounded-t-3xl sm:border sm:border-border/60 sm:bg-card sm:mt-4">
+      <div className="flex items-center gap-3 border-b border-border/60 bg-card px-4 py-3 sm:mt-4 sm:rounded-t-3xl sm:border sm:border-border/60">
         <Avatar className="size-10 ring-2 ring-primary/20">
           <AvatarFallback className="bg-primary text-primary-foreground">
             <Sparkles className="size-5" />

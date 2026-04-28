@@ -120,7 +120,7 @@ export function AdherenceView() {
                     : "text-muted-foreground"
               const Icon = dose.status === "taken" ? CheckCircle2 : dose.status === "missed" ? XCircle : Clock
               return (
-                <li key={dose.id} className="px-6 py-3 flex items-center gap-4">
+                <li key={dose.id} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
                   <div className={cn("size-9 rounded-xl bg-muted flex items-center justify-center", tone)}>
                     <Icon className="size-5" />
                   </div>
@@ -150,7 +150,7 @@ export function AdherenceView() {
               )
             })}
           </ul>
-          <div className="px-6 pt-4">
+          <div className="px-4 pt-4 sm:px-6">
             <Button variant="ghost" className="w-full rounded-xl text-muted-foreground">
               {t("common.loadMore")}
             </Button>

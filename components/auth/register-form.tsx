@@ -17,8 +17,8 @@ import type { Locale } from "@/lib/i18n/translations"
 
 const ROUTE_BY_ROLE = {
   patient: "/dashboard",
-  family: "/family-dashboard",
-  doctor: "/doctor-dashboard",
+  family: "/family",
+  doctor: "/doctor",
 }
 
 type FormState = {

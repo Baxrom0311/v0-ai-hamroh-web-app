@@ -14,8 +14,8 @@ import { useAuth } from "@/lib/auth/provider"
 
 const ROUTE_BY_ROLE = {
   patient: "/dashboard",
-  family: "/family-dashboard",
-  doctor: "/doctor-dashboard",
+  family: "/family",
+  doctor: "/doctor",
 }
 
 export function LoginForm() {

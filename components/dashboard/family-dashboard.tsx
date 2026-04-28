@@ -77,7 +77,7 @@ export function FamilyDashboard() {
         <CardContent className="px-0">
           <ul className="divide-y divide-border/60">
             {members.map((m) => (
-              <li key={m.id} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              <li key={m.id} className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:px-6 sm:py-5">
                 <Avatar className="size-12 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                     {m.name
