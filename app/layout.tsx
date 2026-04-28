@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uz" className={`${inter.variable} bg-background`} suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className="overflow-x-clip font-sans antialiased">
         <I18nProvider>
           <AuthProvider>
             {children}

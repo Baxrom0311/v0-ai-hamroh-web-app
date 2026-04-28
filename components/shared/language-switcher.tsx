@@ -16,9 +16,16 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size={compact ? "icon" : "sm"} className="gap-2">
+        <Button variant="ghost" size={compact ? "icon" : "sm"} className="shrink-0 gap-2 px-2 sm:px-3">
           <Languages className="size-4" aria-hidden />
-          {!compact && <span className="text-sm">{localeNames[locale]}</span>}
+          {/* Locale label collapses to icon-only on mobile to save room. */}
+          {!compact && (
+            <span className="hidden text-sm sm:inline">{localeNames[locale]}</span>
+          )}
+          {/* Show a tiny 2-letter code on mobile so users can still see what's active. */}
+          {!compact && (
+            <span className="text-xs font-semibold uppercase sm:hidden">{locale}</span>
+          )}
           <span className="sr-only">Change language</span>
         </Button>
       </DropdownMenuTrigger>

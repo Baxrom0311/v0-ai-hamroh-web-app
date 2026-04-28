@@ -29,30 +29,35 @@ export function LandingHero() {
         aria-hidden
         className="pointer-events-none absolute -top-40 left-1/2 h-[480px] w-[920px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
       />
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:py-20 lg:grid-cols-12 lg:gap-12 lg:py-24 lg:px-6">
-        <div className="lg:col-span-7">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Heart className="size-3.5 fill-current" strokeWidth={0} />
-            {locale === "uz"
-              ? "O'zbekiston uchun aqlli sog'liq yordamchisi"
-              : locale === "ru"
-                ? "Умный медицинский помощник для Узбекистана"
-                : "Smart health companion for Uzbekistan"}
+      {/* min-w-0 on grid items prevents intrinsic content (the long Uzbek
+          heading word) from blowing out the grid track and creating page-wide
+          horizontal scroll on mobile. */}
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:py-20 lg:grid-cols-12 lg:gap-12 lg:px-6 lg:py-24">
+        <div className="min-w-0 lg:col-span-7">
+          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary sm:text-xs">
+            <Heart className="size-3.5 shrink-0 fill-current" strokeWidth={0} />
+            <span className="truncate sm:whitespace-normal">
+              {locale === "uz"
+                ? "O'zbekiston uchun aqlli sog'liq yordamchisi"
+                : locale === "ru"
+                  ? "Умный медицинский помощник для Узбекистана"
+                  : "Smart health companion for Uzbekistan"}
+            </span>
           </span>
-          <h1 className="mt-5 text-balance text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          <h1 className="mt-5 text-balance break-words text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl sm:leading-[1.05] lg:text-6xl">
             {t("landing.heroTitle")}
           </h1>
           <p className="mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
             {t("landing.heroSubtitle")}
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="rounded-full px-6">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button asChild size="lg" className="w-full rounded-full px-6 sm:w-auto">
               <Link href="/register">
                 {t("landing.heroCta")}
                 <ArrowRight className="ml-1 size-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="rounded-full px-6">
+            <Button asChild size="lg" variant="outline" className="w-full rounded-full px-6 sm:w-auto">
               <Link href="/login">
                 {t("landing.heroSecondaryCta")}
               </Link>
@@ -74,7 +79,7 @@ export function LandingHero() {
           </div>
         </div>
 
-        <div className="relative lg:col-span-5">
+        <div className="relative min-w-0 lg:col-span-5">
           <HeroPreview />
         </div>
       </div>
