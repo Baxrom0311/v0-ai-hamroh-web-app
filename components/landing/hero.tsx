@@ -99,17 +99,17 @@ function HeroPreview() {
         : "Don't worry about fatigue — it's normal. Let's not skip a dose."
 
   return (
-    // Bottom padding reserves vertical room for the absolutely-positioned
-    // chat-bubble overlay so it isn't clipped by the section's overflow-hidden
-    // on mobile.
-    <div className="relative pb-16 sm:pb-20">
+    // On mobile the chat-bubble + supporters chip render inline below the main
+    // card (no overflow risk, no overlap with the doses list). At lg+ they
+    // float as decorative overlays since there's enough horizontal room.
+    <div className="relative space-y-4 lg:space-y-0 lg:pb-6">
       <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-xl shadow-primary/5 sm:p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{greet}</p>
-            <p className="text-base font-semibold text-foreground">{t("dashboard.todayMeds")}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm text-muted-foreground">{greet}</p>
+            <p className="truncate text-base font-semibold text-foreground">{t("dashboard.todayMeds")}</p>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
             3/5 {locale === "uz" ? "ichilgan" : locale === "ru" ? "принято" : "taken"}
           </span>
         </div>
@@ -121,19 +121,19 @@ function HeroPreview() {
         </div>
       </div>
 
-      <div className="absolute -left-4 -bottom-6 w-[88%] rotate-[-2deg] rounded-2xl border border-border/60 bg-card p-4 shadow-lg sm:w-[78%]">
+      <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-lg lg:absolute lg:-bottom-6 lg:-left-4 lg:w-[78%] lg:-rotate-2">
         <div className="flex items-start gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
             <MessageCircle className="size-4" />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold text-foreground">{t("chat.title")}</p>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{aiReply}</p>
           </div>
         </div>
       </div>
 
-      <div className="absolute -right-3 -top-4 hidden items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-md sm:inline-flex">
+      <div className="hidden items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-md lg:absolute lg:-right-3 lg:-top-4 lg:inline-flex">
         <Users className="size-3.5 text-primary" />
         {locale === "uz" ? "Bobur va 1 yaqin kuzatmoqda" : locale === "ru" ? "Бобур и 1 близкий рядом" : "Bobur + 1 supporting"}
       </div>
