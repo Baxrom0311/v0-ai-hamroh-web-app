@@ -70,6 +70,54 @@ export function RiskGauge({
   )
 }
 
+// Compact pill-style indicator used by family/doctor dashboards. Accepts
+// either a numeric score (0-100) or an explicit risk level. Renders the
+// adherence percentage when provided.
+export function RiskIndicator({
+  level,
+  score,
+  rate,
+  size = "sm",
+  className,
+}: {
+  level?: RiskLevel | string
+  score?: number
+  rate?: number
+  size?: "sm" | "md" | "lg"
+  className?: string
+}) {
+  const resolvedLevel: RiskLevel =
+    (level as RiskLevel) ?? (typeof score === "number" ? riskFromScore(score) : "low")
+  const color = colorByLevel[resolvedLevel] ?? colorByLevel.low
+  const labelMap: Record<RiskLevel, string> = {
+    low: "Yaxshi",
+    medium: "O'rtacha",
+    high: "Yuqori xavf",
+    critical: "Tanqidiy",
+  }
+  const padding = size === "lg" ? "px-3 py-1.5 text-sm" : size === "md" ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-xs"
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full font-medium ring-1 ring-inset",
+        padding,
+        className,
+      )}
+      style={{
+        backgroundColor: `color-mix(in oklab, ${color} 15%, transparent)`,
+        color,
+        // @ts-expect-error CSS var
+        "--tw-ring-color": `color-mix(in oklab, ${color} 30%, transparent)`,
+      }}
+    >
+      <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} />
+      <span>{labelMap[resolvedLevel]}</span>
+      {typeof rate === "number" && <span className="tabular-nums opacity-80">· {rate}%</span>}
+    </span>
+  )
+}
+
 export function RiskBadge({
   level,
   className,
