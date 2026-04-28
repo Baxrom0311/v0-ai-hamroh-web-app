@@ -41,13 +41,13 @@ const patientNav: NavItem[] = [
 ]
 
 const familyNav: NavItem[] = [
-  { href: "/family-dashboard", labelKey: "nav.dashboard", icon: HeartPulse },
+  { href: "/family", labelKey: "nav.dashboard", icon: HeartPulse },
   { href: "/chat", labelKey: "nav.chat", icon: MessageCircle },
 ]
 
 const doctorNav: NavItem[] = [
-  { href: "/doctor-dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { href: "/doctor-dashboard?tab=patients", labelKey: "nav.doctor", icon: Users },
+  { href: "/doctor", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/doctor", labelKey: "nav.doctor", icon: Users },
 ]
 
 function getNav(role?: string): NavItem[] {

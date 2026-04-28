@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useT } from "@/lib/i18n/provider"
-import { mockMedications } from "@/lib/mock-data"
+import { mockMedications, type SimpleMedication } from "@/lib/mock-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Pill, Plus, Pencil, Trash2, Clock } from "lucide-react"
-import type { Medication } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+type Medication = SimpleMedication
 
 export function MedicationsList() {
   const { t } = useT()

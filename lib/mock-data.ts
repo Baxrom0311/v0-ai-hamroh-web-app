@@ -257,6 +257,158 @@ export const MOCK_CHAT_HISTORY: ChatMessage[] = [
   },
 ]
 
+// =============================================================================
+// View-model adapters for newer pages (medications list, adherence, family,
+// doctor). These are derived from the canonical MOCK_* exports above so a
+// single edit propagates everywhere.
+// =============================================================================
+
+export type SimpleMedication = {
+  id: number
+  name: string
+  dosage: string
+  schedule_times: string[]
+  notes?: string
+  is_active: boolean
+}
+
+export const mockMedications: SimpleMedication[] = [
+  ...MOCK_MEDICATIONS.map((m) => ({
+    id: m.id,
+    name: m.name,
+    dosage: m.dosage,
+    schedule_times: m.times,
+    notes: m.instructions,
+    is_active: m.active,
+  })),
+  {
+    id: 99,
+    name: "Aspirin (kardio)",
+    dosage: "75 mg",
+    schedule_times: ["09:00"],
+    notes: "Ovqatdan keyin (eski kurs)",
+    is_active: false,
+  },
+]
+
+export type SimpleDose = {
+  id: number
+  medication_id: number
+  status: "taken" | "missed" | "skipped" | "pending"
+  scheduled_at: string // ISO
+}
+
+// Recent doses for the adherence timeline (last few days, mixed statuses)
+export const mockDoses: SimpleDose[] = (() => {
+  const out: SimpleDose[] = []
+  const now = Date.now()
+  let id = 1
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(now - i * 6 * 60 * 60 * 1000)
+    const status: SimpleDose["status"] = i === 2 || i === 6 ? "missed" : i === 5 ? "skipped" : "taken"
+    out.push({
+      id: id++,
+      medication_id: (i % 3) + 1,
+      status,
+      scheduled_at: d.toISOString(),
+    })
+  }
+  return out
+})()
+
+export type HeatmapDay = {
+  date: string
+  total: number
+  taken: number
+  missed: number
+}
+
+export const mockHeatmapData: HeatmapDay[] = (() => {
+  const out: HeatmapDay[] = []
+  const today = new Date()
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const total = 5
+    let taken: number
+    if (i > 60) taken = 4 + Math.floor(Math.random() * 2) // 4-5
+    else if (i > 30) taken = 3 + Math.floor(Math.random() * 3) // 3-5
+    else if (i > 7) taken = 2 + Math.floor(Math.random() * 4) // 2-5
+    else if (i === 0) taken = 3
+    else taken = 1 + Math.floor(Math.random() * 4) // 1-4
+    const missed = total - taken - (Math.random() < 0.15 ? 1 : 0)
+    out.push({
+      date: d.toISOString().slice(0, 10),
+      total,
+      taken,
+      missed: Math.max(0, missed),
+    })
+  }
+  return out
+})()
+
+export type SimpleRisk = "low" | "medium" | "high" | "critical"
+
+export type SimplePatient = {
+  id: string
+  name: string
+  age: number
+  diagnoses: string[]
+  adherenceRate: number
+  risk: SimpleRisk
+  streak: number
+  trend: number[]
+  lastVisit: string
+}
+
+export type SimpleFamilyMember = {
+  id: string
+  name: string
+  relation: string
+  adherenceRate: number
+  risk: SimpleRisk
+  medsCount: number
+  streak: number
+  trend: number[]
+  lastSeen: string
+}
+
+export const mockFamilyMembers: SimpleFamilyMember[] = [
+  {
+    id: "fm-1",
+    name: "Aziza Karimova",
+    relation: "Onam",
+    adherenceRate: 67,
+    risk: "high",
+    medsCount: 3,
+    streak: 0,
+    trend: MOCK_ADHERENCE_HISTORY.slice(-14).map((d) => d.rate),
+    lastSeen: "2 soat oldin",
+  },
+  {
+    id: "fm-2",
+    name: "Bobur Karimov",
+    relation: "Otam",
+    adherenceRate: 92,
+    risk: "low",
+    medsCount: 2,
+    streak: 18,
+    trend: Array.from({ length: 14 }, () => 85 + Math.floor(Math.random() * 15)),
+    lastSeen: "30 daqiqa oldin",
+  },
+  {
+    id: "fm-3",
+    name: "Olim Karimov",
+    relation: "Akam",
+    adherenceRate: 78,
+    risk: "medium",
+    medsCount: 1,
+    streak: 5,
+    trend: Array.from({ length: 14 }, () => 65 + Math.floor(Math.random() * 30)),
+    lastSeen: "1 kun oldin",
+  },
+]
+
 export const MOCK_DOCTOR_PATIENTS: DoctorPatient[] = [
   {
     id: 1,
@@ -325,3 +477,22 @@ export const MOCK_DOCTOR_PATIENTS: DoctorPatient[] = [
     phone: "+998909999999",
   },
 ]
+
+const _diseaseLabels: Record<string, string> = {
+  tb: "Sil (TB)",
+  hypertension: "Gipertenziya",
+  diabetes: "Diabet",
+  other: "Boshqa",
+}
+
+export const mockPatients: SimplePatient[] = MOCK_DOCTOR_PATIENTS.map((p) => ({
+  id: String(p.id),
+  name: p.full_name,
+  age: p.age,
+  diagnoses: [_diseaseLabels[p.disease] || "—"],
+  adherenceRate: p.adherence_rate_30d,
+  risk: p.risk.level,
+  streak: Math.max(0, Math.round(p.adherence_rate_30d / 10)),
+  trend: p.adherence_sparkline.slice(-14),
+  lastVisit: new Date(p.last_seen).toLocaleDateString("uz-UZ", { day: "numeric", month: "short" }),
+}))

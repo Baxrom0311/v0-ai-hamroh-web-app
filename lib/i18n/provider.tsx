@@ -51,3 +51,6 @@ export function useI18n() {
   if (!ctx) throw new Error("useI18n must be used within I18nProvider")
   return ctx
 }
+
+// Alias for ergonomic use in components that destructure { t }
+export const useT = useI18n
