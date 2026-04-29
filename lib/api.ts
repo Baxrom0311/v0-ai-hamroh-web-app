@@ -39,6 +39,29 @@ export type TodayDose = {
   alert_message?: string | null
 }
 
+export type SideEffectCalendarCard = {
+  medication_id: number
+  medication_name: string
+  treatment_day: number
+  expected_day: number
+  date: string
+  window_label: string
+  title: string
+  message: string
+  action: string
+  severity: "normal" | "watch" | "urgent" | string
+  is_today: boolean
+}
+
+export type SideEffectCalendar = {
+  generated_at: string
+  summary: string
+  today: SideEffectCalendarCard[]
+  upcoming: SideEffectCalendarCard[]
+  red_flags: string[]
+  patient_message: string
+}
+
 export type AdherenceLog = {
   id: number
   medication_id: number
@@ -177,6 +200,21 @@ export type MedicationPhotoVerification = {
   warnings: string[]
 }
 
+export type VisualDotVerification = {
+  face_visible: boolean
+  pill_visible: boolean
+  mouth_or_swallow_visible: boolean
+  ingestion_likely: boolean
+  medication_match: "yes" | "possible" | "no" | "unknown" | string
+  confidence: number
+  observations: string[]
+  patient_message: string
+  warnings: string[]
+  verified: boolean
+  marked_taken: boolean
+  adherence_log: AdherenceLog | null
+}
+
 export type PrescriptionMedicationSuggestion = {
   name: string | null
   dosage: string | null
@@ -273,7 +311,7 @@ export const api = {
     return apiFetch<User>("/users/me")
   },
 
-  updateMe(payload: Partial<Pick<User, "full_name" | "age" | "gender" | "language" | "timezone">>) {
+  updateMe(payload: Partial<Pick<User, "full_name" | "age" | "gender" | "language" | "timezone" | "privacy_mode">>) {
     return apiFetch<User>("/users/me", {
       method: "PUT",
       body: jsonBody(payload),
@@ -310,6 +348,10 @@ export const api = {
 
   todayDoses() {
     return apiFetch<TodayDose[]>("/medications/today")
+  },
+
+  sideEffectCalendar() {
+    return apiFetch<SideEffectCalendar>("/medications/side-effect-calendar")
   },
 
   logDoseTaken(payload: {
@@ -383,6 +425,17 @@ export const api = {
 
   readPrescription(payload: { image_base64: string; mime_type: string }) {
     return apiFetch<PrescriptionReadResult>("/ai/read-prescription", {
+      method: "POST",
+      body: jsonBody(payload),
+    })
+  },
+
+  verifyDoseVideo(payload: {
+    frames: Array<{ image_base64: string; mime_type: string }>
+    medication_id?: number
+    scheduled_time?: string
+  }) {
+    return apiFetch<VisualDotVerification>("/ai/verify-dose-video", {
       method: "POST",
       body: jsonBody(payload),
     })

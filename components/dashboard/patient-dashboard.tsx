@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, Camera, ChevronRight, Flame, Loader2, MessageCircle, Pill, Plus, Sparkles, Users, Volume2 } from "lucide-react"
+import { AlertTriangle, CalendarClock, Camera, ChevronRight, Flame, Loader2, MessageCircle, Pill, Plus, ShieldCheck, Sparkles, Users, Video, Volume2 } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useI18n } from "@/lib/i18n/provider"
 import { useAuth } from "@/lib/auth/provider"
-import { api, type ApiRisk, type FamilyConnection, type MedicationPhotoVerification, type PatientAnalytics, type TodayDose } from "@/lib/api"
+import { api, type ApiRisk, type FamilyConnection, type MedicationPhotoVerification, type PatientAnalytics, type SideEffectCalendar, type SideEffectCalendarCard, type TodayDose, type VisualDotVerification } from "@/lib/api"
 import type { Dose } from "@/lib/types"
 import { formatLongDate, riskFromScore } from "@/lib/format"
 import { RiskGauge } from "@/components/shared/risk-indicator"
@@ -27,11 +27,14 @@ export function PatientDashboard() {
   const [doses, setDoses] = useState<Dose[]>([])
   const [analytics, setAnalytics] = useState<PatientAnalytics | null>(null)
   const [risk, setRisk] = useState<ApiRisk | null>(null)
+  const [sideEffectCalendar, setSideEffectCalendar] = useState<SideEffectCalendar | null>(null)
   const [family, setFamily] = useState<FamilyConnection[]>([])
   const [moodReply, setMoodReply] = useState<string | null>(null)
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null)
   const [verificationByDose, setVerificationByDose] = useState<Record<number, MedicationPhotoVerification>>({})
   const [verifyingDoseId, setVerifyingDoseId] = useState<number | null>(null)
+  const [visualDotByDose, setVisualDotByDose] = useState<Record<number, VisualDotVerification>>({})
+  const [visualDotDoseId, setVisualDotDoseId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,16 +44,18 @@ export function PatientDashboard() {
       setLoading(true)
       setError(null)
       try {
-        const [today, analyticsData, riskData, familyData] = await Promise.all([
+        const [today, analyticsData, riskData, sideEffectsData, familyData] = await Promise.all([
           api.todayDoses(),
           api.patientAnalytics(),
           api.currentRisk(),
+          api.sideEffectCalendar().catch(() => null),
           api.familyList().catch(() => []),
         ])
         if (cancelled) return
         setDoses(today.map(mapDose))
         setAnalytics(analyticsData)
         setRisk(riskData)
+        setSideEffectCalendar(sideEffectsData)
         setFamily(familyData)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Dashboard yuklanmadi")
@@ -158,6 +163,25 @@ export function PatientDashboard() {
     }
   }
 
+  async function handleVisualDot(dose: Dose) {
+    setVisualDotDoseId(dose.id)
+    try {
+      const frames = await captureVisualDotFrames()
+      const result = await api.verifyDoseVideo({
+        frames,
+        medication_id: dose.medication_id,
+        scheduled_time: dose.scheduled_at ?? scheduledIsoFromTime(dose.scheduled_time),
+      })
+      setVisualDotByDose((prev) => ({ ...prev, [dose.id]: result }))
+      if (result.marked_taken) await refreshToday()
+      toast.success(result.patient_message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Visual DOT tekshirilmadi")
+    } finally {
+      setVisualDotDoseId(null)
+    }
+  }
+
   return (
     <>
       {isCritical && <CriticalBanner />}
@@ -214,6 +238,8 @@ export function PatientDashboard() {
           )}
         </section>
 
+        <SideEffectCalendarCardView calendar={sideEffectCalendar} onSpeak={speakReminder} />
+
         <section className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm sm:p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
@@ -267,8 +293,11 @@ export function PatientDashboard() {
                   onMiss={handleMiss}
                   onSpeak={speakReminder}
                   onVerifyPhoto={handleVerifyPhoto}
+                  onVisualDot={handleVisualDot}
                   verification={verificationByDose[dose.id]}
+                  visualDot={visualDotByDose[dose.id]}
                   verifying={verifyingDoseId === dose.id}
+                  visualDotLoading={visualDotDoseId === dose.id}
                 />
               ))}
             </ul>
@@ -323,6 +352,87 @@ export function PatientDashboard() {
   )
 }
 
+function SideEffectCalendarCardView({
+  calendar,
+  onSpeak,
+}: {
+  calendar: SideEffectCalendar | null
+  onSpeak: (message: string) => void
+}) {
+  const mainCards = [...(calendar?.today ?? []), ...(calendar?.upcoming ?? [])].slice(0, 3)
+  if (!calendar || mainCards.length === 0) return null
+
+  const urgentCount = mainCards.filter((card) => card.severity === "urgent").length
+  return (
+    <section className="rounded-3xl border border-border/60 bg-gradient-to-br from-amber-50 via-card to-card p-5 shadow-sm sm:p-6 lg:col-span-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
+            <CalendarClock className="size-3.5" />
+            Predictive side-effect calendar
+          </div>
+          <h2 className="mt-3 text-lg font-semibold text-foreground">Yon ta'sirni oldindan bilish</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{calendar.summary}</p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="rounded-full bg-background/70"
+          onClick={() => onSpeak(mainCards[0]?.message || calendar.patient_message)}
+        >
+          <Volume2 className="mr-1 size-4" />
+          Ovoz
+        </Button>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {mainCards.map((card) => (
+          <SideEffectMiniCard key={`${card.medication_id}-${card.title}`} card={card} />
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border/60 bg-background/70 p-4">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", urgentCount ? "text-[var(--risk-high)]" : "text-amber-700")} />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Red flag belgilar</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {calendar.red_flags.slice(0, 2).join(" · ")}
+            </p>
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calendar.patient_message}</p>
+    </section>
+  )
+}
+
+function SideEffectMiniCard({ card }: { card: SideEffectCalendarCard }) {
+  const badge = sideEffectBadge(card.severity)
+  return (
+    <article className="rounded-2xl border border-border/60 bg-background/75 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={badge.variant} className="rounded-full">
+          {badge.label}
+        </Badge>
+        <span className="text-xs text-muted-foreground">{card.window_label}</span>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-foreground">{card.title}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{card.message}</p>
+      <div className="mt-3 rounded-xl bg-muted/50 px-3 py-2 text-xs leading-relaxed text-foreground">
+        <span className="font-semibold">{card.medication_name}:</span> {card.action}
+      </div>
+    </article>
+  )
+}
+
+function sideEffectBadge(severity: string): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+  if (severity === "urgent") return { label: "Shifokor signali", variant: "destructive" }
+  if (severity === "watch") return { label: "Kuzatish", variant: "secondary" }
+  return { label: "Kutiladigan", variant: "outline" }
+}
+
 function CriticalBanner() {
   const { t } = useI18n()
   return (
@@ -374,16 +484,22 @@ function DoseItem({
   onMiss,
   onSpeak,
   onVerifyPhoto,
+  onVisualDot,
   verification,
+  visualDot,
   verifying,
+  visualDotLoading,
 }: {
   dose: Dose
   onTake: (d: Dose) => void
   onMiss: (d: Dose) => void
   onSpeak: (message: string) => void
   onVerifyPhoto: (d: Dose, file: File) => void
+  onVisualDot: (d: Dose) => void
   verification?: MedicationPhotoVerification
+  visualDot?: VisualDotVerification
   verifying?: boolean
+  visualDotLoading?: boolean
 }) {
   const { t, locale } = useI18n()
   const isTaken = dose.status === "taken" || dose.status === "late"
@@ -461,6 +577,27 @@ function DoseItem({
         </div>
       )}
 
+      {visualDot && (
+        <div className="mt-3 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={visualDot.verified ? "default" : "secondary"}>
+              Visual DOT: {visualDot.verified ? "verified" : "review"}
+            </Badge>
+            <span className="text-muted-foreground">{visualDot.confidence}% confidence</span>
+            {visualDot.marked_taken && (
+              <span className="inline-flex items-center gap-1 text-[var(--risk-low)]">
+                <ShieldCheck className="size-3.5" />
+                Dose logged
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-foreground">{visualDot.patient_message}</p>
+          {visualDot.observations.length > 0 && (
+            <p className="mt-1 text-muted-foreground">{visualDot.observations.slice(0, 2).join(" · ")}</p>
+          )}
+        </div>
+      )}
+
       {(isUpcoming || isMissed) && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button onClick={() => onTake(dose)} size="sm" className="h-9 flex-1 rounded-xl text-sm font-semibold sm:flex-none sm:px-5">
@@ -503,9 +640,64 @@ function DoseItem({
             }}
           />
         </label>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-9 rounded-xl bg-transparent text-xs"
+          disabled={visualDotLoading}
+          onClick={() => onVisualDot(dose)}
+        >
+          {visualDotLoading ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <Video className="mr-1 size-3.5" />}
+          Visual DOT
+        </Button>
       </div>
     </li>
   )
+}
+
+async function captureVisualDotFrames(): Promise<Array<{ image_base64: string; mime_type: string }>> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("Brauzer kamera yozishni qo'llab-quvvatlamaydi")
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
+    audio: false,
+  })
+  try {
+    const video = document.createElement("video")
+    video.srcObject = stream
+    video.muted = true
+    video.playsInline = true
+    await video.play()
+    if (!video.videoWidth || !video.videoHeight) {
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => resolve()
+      })
+    }
+
+    const canvas = document.createElement("canvas")
+    const width = video.videoWidth || 720
+    const height = video.videoHeight || 720
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext("2d")
+    if (!ctx) throw new Error("Kamera frame olinmadi")
+
+    const frames: Array<{ image_base64: string; mime_type: string }> = []
+    for (const waitMs of [700, 1500, 1500]) {
+      await delay(waitMs)
+      ctx.drawImage(video, 0, 0, width, height)
+      frames.push({ image_base64: canvas.toDataURL("image/jpeg", 0.82), mime_type: "image/jpeg" })
+    }
+    return frames
+  } finally {
+    stream.getTracks().forEach((track) => track.stop())
+  }
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function StreakCard({ analytics }: { analytics: PatientAnalytics | null }) {

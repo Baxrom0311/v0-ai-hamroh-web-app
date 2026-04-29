@@ -11,6 +11,7 @@ export type User = {
   gender?: Gender | null
   language: "uz" | "ru" | "en"
   timezone?: string
+  privacy_mode?: boolean
   created_at?: string
   avatar_url?: string
 }

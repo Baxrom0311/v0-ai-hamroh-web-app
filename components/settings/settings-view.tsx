@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { useT } from "@/lib/i18n/provider"
 import { useAuth } from "@/lib/auth/provider"
 import { api } from "@/lib/api"
@@ -20,6 +21,7 @@ import {
   Send,
   Bell,
   Shield,
+  EyeOff,
   Info,
   Check,
   Copy,
@@ -30,7 +32,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Tab = "profile" | "language" | "telegram" | "reminders" | "security" | "about"
+type Tab = "profile" | "language" | "telegram" | "reminders" | "privacy" | "security" | "about"
 
 export function SettingsView() {
   const { t, locale, setLocale } = useT()
@@ -42,6 +44,7 @@ export function SettingsView() {
     { id: "language", label: t("settings.tabLanguage"), icon: <Globe className="size-4" /> },
     { id: "telegram", label: t("settings.tabTelegram"), icon: <Send className="size-4" /> },
     { id: "reminders", label: t("settings.tabReminders"), icon: <Bell className="size-4" /> },
+    { id: "privacy", label: "Maxfiy rejim", icon: <EyeOff className="size-4" /> },
     { id: "security", label: t("settings.tabSecurity"), icon: <Shield className="size-4" /> },
     { id: "about", label: t("settings.tabAbout"), icon: <Info className="size-4" /> },
   ]
@@ -104,6 +107,9 @@ export function SettingsView() {
             </TabsContent>
             <TabsContent value="reminders" className="m-0">
               <RemindersPanel />
+            </TabsContent>
+            <TabsContent value="privacy" className="m-0">
+              <PrivacyPanel enabled={!!user?.privacy_mode} onUpdated={refreshUser} />
             </TabsContent>
             <TabsContent value="security" className="m-0">
               <SecurityPanel onLogout={logout} />
@@ -440,6 +446,70 @@ function RemindersPanel() {
         />
       </CardContent>
     </Card>
+  )
+}
+
+function PrivacyPanel({ enabled, onUpdated }: { enabled: boolean; onUpdated: () => Promise<unknown> }) {
+  const [privacyMode, setPrivacyMode] = useState(enabled)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setPrivacyMode(enabled)
+  }, [enabled])
+
+  async function updatePrivacyMode(value: boolean) {
+    const previous = privacyMode
+    setPrivacyMode(value)
+    setSaving(true)
+    try {
+      await api.updateMe({ privacy_mode: value })
+      await onUpdated()
+      toast.success(value ? "Maxfiy rejim yoqildi" : "Maxfiy rejim o'chirildi")
+    } catch (err) {
+      setPrivacyMode(previous)
+      toast.error(err instanceof Error ? err.message : "Maxfiy rejim saqlanmadi")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl border-border/60">
+      <CardHeader>
+        <CardTitle className="text-lg">Maxfiy rejim</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <div className="flex items-start gap-4">
+            <div className="size-11 shrink-0 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
+              <EyeOff className="size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-foreground">Stigma-aware communication</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Yoqilganda Telegram va oilaviy alertlarda dori yoki kasallik nomi ko'rinmaydi. Matnlar "kunlik reja" va "kunlik vazifa" kabi neytral ko'rinadi.
+              </p>
+            </div>
+            <Switch checked={privacyMode} disabled={saving} onCheckedChange={updatePrivacyMode} />
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PrivacyExample before="Dori eslatmasi: Рифампицин 600mg" after="Kunlik eslatma: Kunlik vazifa" />
+          <PrivacyExample before="Aziza 08:00 dagi dozasini o'tkazdi" after="Aziza 08:00 dagi kunlik rejasini bajarmadi" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function PrivacyExample({ before, after }: { before: string; after: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Oldin</p>
+      <p className="mt-1 text-foreground/70 line-through">{before}</p>
+      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-primary">Maxfiy rejim</p>
+      <p className="mt-1 font-medium text-foreground">{after}</p>
+    </div>
   )
 }
 
