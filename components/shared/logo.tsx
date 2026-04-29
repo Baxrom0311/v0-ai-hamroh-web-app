@@ -28,7 +28,7 @@ export function Logo({
       {/* Brand wordmark — hidden on the smallest screens to free horizontal
           space for the language switcher and primary CTA in the nav. */}
       <span className={cn("hidden whitespace-nowrap font-semibold tracking-tight text-foreground sm:inline", text)}>
-        AI Hamroh
+        NoSkipAI
       </span>
     </Link>
   )

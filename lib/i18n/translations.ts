@@ -9,7 +9,7 @@ export const localeNames: Record<Locale, string> = {
 
 const dict = {
   common: {
-    appName: { uz: "AI Hamroh", ru: "AI Hamroh", en: "AI Hamroh" },
+    appName: { uz: "NoSkipAI", ru: "NoSkipAI", en: "NoSkipAI" },
     welcome: { uz: "Xush kelibsiz", ru: "Добро пожаловать", en: "Welcome" },
     login: { uz: "Kirish", ru: "Войти", en: "Sign in" },
     register: { uz: "Ro'yxatdan o'tish", ru: "Регистрация", en: "Sign up" },
@@ -76,7 +76,7 @@ const dict = {
       ru: "Всё, что вам нужно",
       en: "Everything you need",
     },
-    feature1Title: { uz: "AI Hamroh bilan suhbat", ru: "Беседа с AI-помощником", en: "Talk with your AI companion" },
+    feature1Title: { uz: "NoSkipAI bilan suhbat", ru: "Беседа с AI-помощником", en: "Talk with your AI companion" },
     feature1Desc: {
       uz: "O'zbek tilida 24/7 yordam — yon ta'sirlar, savollar yoki shunchaki gaplashish uchun.",
       ru: "Поддержка 24/7 на русском — побочные эффекты, вопросы или просто разговор.",
@@ -132,7 +132,7 @@ const dict = {
       ru: "Спутник на пути к здоровью",
       en: "Your companion on the road to health",
     },
-    footerCopy: { uz: "© 2025 AI Hamroh", ru: "© 2025 AI Hamroh", en: "© 2025 AI Hamroh" },
+    footerCopy: { uz: "© 2025 NoSkipAI", ru: "© 2025 NoSkipAI", en: "© 2025 NoSkipAI" },
   },
   auth: {
     loginTitle: { uz: "Xush kelibsiz!", ru: "С возвращением!", en: "Welcome back!" },
@@ -154,7 +154,7 @@ const dict = {
       ru: "Демо: +998 90 111 11 11 / demo1234",
       en: "Demo: +998 90 111 11 11 / demo1234",
     },
-    registerTitle: { uz: "Hamrohga qo'shiling", ru: "Присоединяйтесь", en: "Join AI Hamroh" },
+    registerTitle: { uz: "NoSkipAI ga qo'shiling", ru: "Присоединяйтесь", en: "Join NoSkipAI" },
     registerSubtitle: {
       uz: "Davolanish yo'lida birinchi qadam",
       ru: "Первый шаг к лечению",
@@ -309,7 +309,7 @@ const dict = {
     in: { uz: "{n} keyin", ru: "через {n}", en: "in {n}" },
   },
   chat: {
-    title: { uz: "AI Hamroh", ru: "AI Hamroh", en: "AI Hamroh" },
+    title: { uz: "NoSkipAI", ru: "NoSkipAI", en: "NoSkipAI" },
     online: { uz: "Onlayn", ru: "Онлайн", en: "Online" },
     typing: { uz: "Yozyapti...", ru: "Печатает...", en: "Typing..." },
     placeholder: { uz: "Xabar yozing...", ru: "Напишите сообщение...", en: "Type a message..." },
@@ -319,7 +319,7 @@ const dict = {
       en: "AI companion does not replace medical advice",
     },
     welcome: {
-      uz: "Salom! Men sizning AI Hamrohingizman. Davolanishingiz haqida har qanday savol bera olasiz.",
+      uz: "Salom! Men sizning NoSkipAIingizman. Davolanishingiz haqida har qanday savol bera olasiz.",
       ru: "Здравствуйте! Я ваш AI-помощник. Спрашивайте всё о вашем лечении.",
       en: "Hello! I'm your AI companion. Ask me anything about your treatment.",
     },
@@ -545,9 +545,9 @@ const dict = {
     telegramNotConnected: { uz: "Bog'lanmagan", ru: "Не подключено", en: "Not connected" },
     telegramConnect: { uz: "Telegramni bog'lash", ru: "Подключить Telegram", en: "Connect Telegram" },
     telegramCode: {
-      uz: "Telegramda @AIHamrohBot ga kodni yuboring",
-      ru: "Отправьте код боту @AIHamrohBot",
-      en: "Send this code to @AIHamrohBot on Telegram",
+      uz: "Telegramda @NoSkipAIBot ga kodni yuboring",
+      ru: "Отправьте код боту @NoSkipAIBot",
+      en: "Send this code to @NoSkipAIBot on Telegram",
     },
     telegramExpires: { uz: "Kod amal qiladi", ru: "Код истечёт через", en: "Code expires in" },
     telegramSimulate: {

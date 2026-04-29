@@ -11,7 +11,7 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null)
 
-const STORAGE_KEY = "ai-hamroh-locale"
+const STORAGE_KEY = "noskipai-locale"
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("uz")

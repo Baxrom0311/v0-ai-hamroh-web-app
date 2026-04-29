@@ -6,9 +6,9 @@ import { AuthProvider } from "@/lib/auth/provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "AI Hamroh — Davolanishingizning ishonchli yordamchisi",
+  title: "NoSkipAI — Davolanishingizning ishonchli yordamchisi",
   description:
-    "AI Hamroh — surunkali kasalliklar bilan davolanayotgan bemorlar uchun aqlli eslatmalar, AI suhbatdosh va oilaviy qo'llab-quvvatlash platformasi.",
+    "NoSkipAI — surunkali kasalliklar bilan davolanayotgan bemorlar uchun aqlli eslatmalar, AI suhbatdosh va oilaviy qo'llab-quvvatlash platformasi.",
   generator: "v0.app",
 }
 

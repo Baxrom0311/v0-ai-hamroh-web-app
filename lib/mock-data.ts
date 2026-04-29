@@ -235,7 +235,7 @@ export const MOCK_CHAT_HISTORY: ChatMessage[] = [
     id: 1,
     role: "assistant",
     content:
-      "Salom Aziza opa! Men sizning AI Hamrohingizman. Davolanishingiz haqida har qanday savol bera olasiz.",
+      "Salom Aziza opa! Men sizning NoSkipAIingizman. Davolanishingiz haqida har qanday savol bera olasiz.",
     timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   },
   {

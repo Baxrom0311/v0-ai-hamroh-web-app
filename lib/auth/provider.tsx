@@ -25,7 +25,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const STORAGE_KEY = "ai-hamroh-user"
+const STORAGE_KEY = "noskipai-user"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const raw = window.localStorage.getItem(STORAGE_KEY)
         if (raw && !cancelled) setUser(JSON.parse(raw))
-        const token = window.localStorage.getItem("ai-hamroh-token")
+        const token = window.localStorage.getItem("noskipai-token")
         if (!token) return
         const profile = await api.me()
         if (!cancelled) {

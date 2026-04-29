@@ -244,7 +244,7 @@ function TelegramPanel({ connected: connectedFromUser, onLinked }: { connected: 
   const [connecting, setConnecting] = useState(false)
   const [code, setCode] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
-  const [botUsername, setBotUsername] = useState("AIHamrohBot")
+  const [botUsername, setBotUsername] = useState("NoSkipAIBot")
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -584,7 +584,7 @@ function AboutPanel() {
             AI
           </div>
           <div>
-            <p className="font-semibold">AI Hamroh</p>
+            <p className="font-semibold">NoSkipAI</p>
             <p className="text-muted-foreground">{t("settings.version")} 1.0.0</p>
           </div>
         </div>

@@ -1,6 +1,6 @@
-# AI Hamroh Frontend
+# NoSkipAI Frontend
 
-Next.js frontend for the AI Hamroh MVP. It connects to the FastAPI backend on port `8000`.
+Next.js frontend for the NoSkipAI MVP. It connects to the FastAPI backend on port `8000`.
 
 ## Run Locally
 

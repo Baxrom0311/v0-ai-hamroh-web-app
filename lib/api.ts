@@ -2,7 +2,7 @@
 
 import type { User, UserRole } from "./types"
 
-export const AUTH_TOKEN_KEY = "ai-hamroh-token"
+export const AUTH_TOKEN_KEY = "noskipai-token"
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "")
 
@@ -170,6 +170,37 @@ export type FamilyPatientStatus = {
   alerts: string[]
 }
 
+export type FamilyObservation = {
+  id: number
+  family_member_id: number
+  patient_id: number
+  date: string
+  mood_signal: "good" | "tired" | "bad" | string
+  took_medication: boolean
+  notes: string | null
+  created_at: string
+}
+
+export type FamilyObservationMismatch = {
+  date: string
+  has_mismatch: boolean
+  signals: string[]
+  family_observation_count: number
+  patient_taken_logged: boolean
+  patient_missed_logged: boolean
+  message: string
+}
+
+export type FamilyObservationResult = {
+  observation: FamilyObservation
+  mismatch: FamilyObservationMismatch
+}
+
+export type FamilyObservationSummary = {
+  observations: FamilyObservation[]
+  mismatch: FamilyObservationMismatch
+}
+
 export type DoctorPatientRow = {
   patient: User
   latest_risk_level: RiskLevel
@@ -183,6 +214,9 @@ export type PublicAppConfig = {
   gemini_enabled: boolean
   telegram_worker_enabled: boolean
   telegram_bot_username: string | null
+  visual_dot_enabled?: boolean
+  voice_chat_enabled?: boolean
+  family_observation_enabled?: boolean
 }
 
 export type TelegramLinkCode = {
@@ -200,6 +234,28 @@ export type MedicationPhotoVerification = {
   warnings: string[]
 }
 
+export type PillBottleAuditResult = {
+  audit_id: number
+  medication_id: number
+  medication_name: string
+  starting_count: number
+  treatment_days: number
+  doses_per_day: number
+  expected_taken: number
+  expected_remaining: number
+  container_visible: boolean
+  visible_count: number | null
+  count_confidence: number
+  medication_match: "yes" | "possible" | "no" | "unknown" | string
+  readable_text: string[]
+  observations: string[]
+  warnings: string[]
+  patient_message: string
+  signal: "on_track" | "possible_missed" | "possible_extra_taken" | "unknown" | string
+  difference: number | null
+  risk_flag: boolean
+}
+
 export type VisualDotVerification = {
   face_visible: boolean
   pill_visible: boolean
@@ -213,6 +269,44 @@ export type VisualDotVerification = {
   verified: boolean
   marked_taken: boolean
   adherence_log: AdherenceLog | null
+}
+
+export type VoiceChatResult = {
+  transcript: string
+  reply: string
+  voice_base64: string | null
+  voice_mime_type: string | null
+}
+
+export type MdrCostCalculator = {
+  generated_at: string
+  patient_id: number
+  treatment_day: number
+  adherence_rate_30d: number
+  missed_doses_30d: number
+  consecutive_missed: number
+  risk_percent: number
+  risk_level: RiskLevel
+  current_course: { remaining_days: number | null; expected_outcome: string }
+  mdr_scenario: {
+    duration_months: string
+    estimated_cost_usd: number
+    clinic_visits: string
+    family_impact: string[]
+  }
+  patient_message: string
+  disclaimer: string
+}
+
+export type SoapNote = {
+  generated_at: string
+  patient_id: number
+  ai_generated: boolean
+  subjective: string
+  objective: string
+  assessment: string
+  plan: string[]
+  red_flags: string[]
 }
 
 export type PrescriptionMedicationSuggestion = {
@@ -423,6 +517,20 @@ export const api = {
     })
   },
 
+  auditPillBottle(
+    medicationId: number,
+    payload: {
+      image_base64: string
+      mime_type: string
+      starting_count?: number
+    },
+  ) {
+    return apiFetch<PillBottleAuditResult>(`/medications/${medicationId}/pill-audit`, {
+      method: "POST",
+      body: jsonBody(payload),
+    })
+  },
+
   readPrescription(payload: { image_base64: string; mime_type: string }) {
     return apiFetch<PrescriptionReadResult>("/ai/read-prescription", {
       method: "POST",
@@ -435,10 +543,21 @@ export const api = {
     medication_id?: number
     scheduled_time?: string
   }) {
-    return apiFetch<VisualDotVerification>("/ai/verify-dose-video", {
+    return apiFetch<VisualDotVerification>("/adherence/visual-confirm", {
       method: "POST",
       body: jsonBody(payload),
     })
+  },
+
+  voiceChat(payload: { audio_base64: string; mime_type: string }) {
+    return apiFetch<VoiceChatResult>("/ai/voice-chat", {
+      method: "POST",
+      body: jsonBody(payload),
+    })
+  },
+
+  mdrCostCalculator() {
+    return apiFetch<MdrCostCalculator>("/ai/mdr-cost-calculator")
   },
 
   familyList() {
@@ -450,8 +569,29 @@ export const api = {
     return apiFetch<FamilyPatientStatus>(`/family/patient-status${suffix}`)
   },
 
+  createFamilyObservation(payload: {
+    patient_id: number
+    mood_signal: "good" | "tired" | "bad"
+    took_medication: boolean
+    notes?: string | null
+    date?: string
+  }) {
+    return apiFetch<FamilyObservationResult>("/family/observations", {
+      method: "POST",
+      body: jsonBody(payload),
+    })
+  },
+
+  familyObservations(patientId: number, limit = 14) {
+    return apiFetch<FamilyObservationSummary>(`/family/observations/${patientId}?limit=${limit}`)
+  },
+
   doctorPatients() {
     return apiFetch<DoctorPatientRow[]>("/doctor/patients")
+  },
+
+  doctorSoapNote(patientId: number) {
+    return apiFetch<SoapNote>(`/doctor/patient/${patientId}/soap-note`)
   },
 
   doctorHighRiskPatients() {

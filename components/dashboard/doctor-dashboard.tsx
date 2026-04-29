@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useT } from "@/lib/i18n/provider"
-import { api, type DoctorPatientRow } from "@/lib/api"
+import { api, type DoctorPatientRow, type SoapNote } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { RiskIndicator } from "@/components/shared/risk-indicator"
 import { Sparkline } from "@/components/shared/sparkline"
@@ -32,6 +33,8 @@ export function DoctorDashboard() {
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<Filter>("all")
   const [rows, setRows] = useState<DoctorPatientRow[]>([])
+  const [soapByPatient, setSoapByPatient] = useState<Record<number, SoapNote>>({})
+  const [soapLoadingId, setSoapLoadingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,6 +75,19 @@ export function DoctorDashboard() {
       ? Math.round(allPatients.reduce((s, p) => s + p.adherenceRate, 0) / allPatients.length)
       : 0,
     active: allPatients.filter((p) => p.adherenceRate >= 80).length,
+  }
+
+  async function loadSoap(patientId: number) {
+    setSoapLoadingId(patientId)
+    setError(null)
+    try {
+      const note = await api.doctorSoapNote(patientId)
+      setSoapByPatient((current) => ({ ...current, [patientId]: note }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "SOAP note yaratilmadi")
+    } finally {
+      setSoapLoadingId(null)
+    }
   }
 
   return (
@@ -126,7 +142,15 @@ export function DoctorDashboard() {
             ) : patients.length === 0 ? (
               <li className="px-6 py-12 text-center text-sm text-muted-foreground">{t("doctor.noResults")}</li>
             ) : (
-              patients.map((p) => <PatientRow key={p.id} patient={p} />)
+              patients.map((p) => (
+                <PatientRow
+                  key={p.id}
+                  patient={p}
+                  soap={soapByPatient[p.id]}
+                  soapLoading={soapLoadingId === p.id}
+                  onSoap={() => loadSoap(p.id)}
+                />
+              ))
             )}
           </ul>
         </CardContent>
@@ -141,7 +165,7 @@ function mapPatient(row: DoctorPatientRow): PatientView {
     id: row.patient.id,
     name: row.patient.full_name,
     age: row.patient.age ?? null,
-    diagnoses: ["AI Hamroh"],
+    diagnoses: ["NoSkipAI"],
     adherenceRate,
     risk: row.latest_risk_level,
     riskScore: row.latest_risk_score,
@@ -150,7 +174,17 @@ function mapPatient(row: DoctorPatientRow): PatientView {
   }
 }
 
-function PatientRow({ patient }: { patient: PatientView }) {
+function PatientRow({
+  patient,
+  soap,
+  soapLoading,
+  onSoap,
+}: {
+  patient: PatientView
+  soap?: SoapNote
+  soapLoading: boolean
+  onSoap: () => void
+}) {
   const { t } = useT()
   return (
     <li className="group cursor-pointer px-4 py-4 transition-colors hover:bg-muted/40 sm:px-6">
@@ -187,9 +221,42 @@ function PatientRow({ patient }: { patient: PatientView }) {
           <RiskIndicator level={patient.risk} size="sm" className="mt-1.5" />
         </div>
 
+        <Button size="sm" variant="outline" className="hidden rounded-xl sm:inline-flex" disabled={soapLoading} onClick={onSoap}>
+          {soapLoading ? "..." : "SOAP"}
+        </Button>
         <ChevronRight className="hidden size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block" />
       </div>
+      {soap && (
+        <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={soap.ai_generated ? "default" : "secondary"}>{soap.ai_generated ? "AI SOAP" : "Fallback SOAP"}</Badge>
+            <span className="text-xs text-muted-foreground">{new Date(soap.generated_at).toLocaleString()}</span>
+          </div>
+          <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
+            <SoapBlock title="S" text={soap.subjective} />
+            <SoapBlock title="O" text={soap.objective} />
+            <SoapBlock title="A" text={soap.assessment} />
+            <div className="rounded-xl bg-background/70 p-3">
+              <p className="font-semibold text-foreground">P</p>
+              <ul className="mt-1 space-y-1 text-muted-foreground">
+                {soap.plan.slice(0, 3).map((item) => (
+                  <li key={item}>- {item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </li>
+  )
+}
+
+function SoapBlock({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-xl bg-background/70 p-3">
+      <p className="font-semibold text-foreground">{title}</p>
+      <p className="mt-1 leading-relaxed text-muted-foreground">{text}</p>
+    </div>
   )
 }
 

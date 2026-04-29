@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useT } from "@/lib/i18n/provider"
-import { api, type FamilyConnection, type FamilyPatientStatus, type RiskLevel } from "@/lib/api"
+import { api, type FamilyConnection, type FamilyObservationSummary, type FamilyPatientStatus, type RiskLevel } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -23,12 +23,14 @@ type FamilyMemberView = {
   trend: number[]
   lastSeen: string
   alerts: string[]
+  observation: FamilyObservationSummary | null
 }
 
 export function FamilyDashboard() {
   const { t } = useT()
   const [members, setMembers] = useState<FamilyMemberView[]>([])
   const [loading, setLoading] = useState(true)
+  const [savingObservation, setSavingObservation] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -39,13 +41,18 @@ export function FamilyDashboard() {
       try {
         const connections = await api.familyList()
         const approved = connections.filter((connection) => connection.is_approved && connection.patient)
-        const statuses = await Promise.all(
-          approved.map((connection) =>
-            api.familyPatientStatus(connection.patient?.id).catch(() => null),
-          ),
+        const rows = await Promise.all(
+          approved.map(async (connection) => {
+            const patientId = connection.patient?.id
+            const [status, observation] = await Promise.all([
+              api.familyPatientStatus(patientId).catch(() => null),
+              patientId ? api.familyObservations(patientId).catch(() => null) : Promise.resolve(null),
+            ])
+            return { connection, status, observation }
+          }),
         )
         if (cancelled) return
-        setMembers(approved.map((connection, index) => mapFamilyMember(connection, statuses[index])))
+        setMembers(rows.map((row) => mapFamilyMember(row.connection, row.status, row.observation)))
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Family dashboard yuklanmadi")
       } finally {
@@ -63,6 +70,36 @@ export function FamilyDashboard() {
     () => (members.length ? Math.round(members.reduce((s, m) => s + m.adherenceRate, 0) / members.length) : 0),
     [members],
   )
+
+  async function sendObservation(patientId: number, mood: "good" | "tired" | "bad", tookMedication: boolean) {
+    setSavingObservation(patientId)
+    setError(null)
+    try {
+      const result = await api.createFamilyObservation({
+        patient_id: patientId,
+        mood_signal: mood,
+        took_medication: tookMedication,
+      })
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === patientId
+            ? {
+                ...member,
+                observation: {
+                  observations: [result.observation, ...(member.observation?.observations ?? [])],
+                  mismatch: result.mismatch,
+                },
+                alerts: result.mismatch.has_mismatch ? Array.from(new Set([...member.alerts, result.mismatch.message])) : member.alerts,
+              }
+            : member,
+        ),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Family signal yuborilmadi")
+    } finally {
+      setSavingObservation(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -138,6 +175,22 @@ export function FamilyDashboard() {
                       </span>
                       <span>{m.lastSeen}</span>
                     </div>
+                    {m.observation?.mismatch.has_mismatch && (
+                      <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                        Family signal: {m.observation.mismatch.message}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" className="h-8 rounded-lg" disabled={savingObservation === m.id} onClick={() => sendObservation(m.id, "good", true)}>
+                        😊 Yaxshi
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 rounded-lg" disabled={savingObservation === m.id} onClick={() => sendObservation(m.id, "tired", false)}>
+                        😐 Charchagan
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 rounded-lg" disabled={savingObservation === m.id} onClick={() => sendObservation(m.id, "bad", false)}>
+                        😟 Yomon
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="hidden md:block">
@@ -170,7 +223,11 @@ export function FamilyDashboard() {
   )
 }
 
-function mapFamilyMember(connection: FamilyConnection, status: FamilyPatientStatus | null): FamilyMemberView {
+function mapFamilyMember(
+  connection: FamilyConnection,
+  status: FamilyPatientStatus | null,
+  observation: FamilyObservationSummary | null,
+): FamilyMemberView {
   const patient = connection.patient!
   const adherence = Math.round(status?.adherence_rate_7d ?? 0)
   return {
@@ -183,7 +240,8 @@ function mapFamilyMember(connection: FamilyConnection, status: FamilyPatientStat
     risk: status?.current_risk_level ?? "low",
     trend: [Math.max(adherence - 12, 0), Math.max(adherence - 6, 0), adherence],
     lastSeen: status?.last_taken_at ? new Date(status.last_taken_at).toLocaleString() : "—",
-    alerts: status?.alerts ?? [],
+    alerts: observation?.mismatch.has_mismatch ? [...(status?.alerts ?? []), observation.mismatch.message] : (status?.alerts ?? []),
+    observation,
   }
 }
 

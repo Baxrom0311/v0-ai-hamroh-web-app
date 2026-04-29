@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { useT } from "@/lib/i18n/provider"
-import { api, type ApiMedication } from "@/lib/api"
+import { api, type ApiMedication, type PillBottleAuditResult } from "@/lib/api"
+import { fileToBase64 } from "@/lib/image-file"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Pill, Plus, Pencil, Trash2, Clock } from "lucide-react"
+import { Pill, Plus, Pencil, Trash2, Clock, Camera, Loader2, ScanSearch } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function MedicationsList() {
@@ -27,6 +28,8 @@ export function MedicationsList() {
   const [meds, setMeds] = useState<ApiMedication[]>([])
   const [archived, setArchived] = useState<ApiMedication[]>([])
   const [toDelete, setToDelete] = useState<ApiMedication | null>(null)
+  const [audits, setAudits] = useState<Record<number, PillBottleAuditResult>>({})
+  const [auditingId, setAuditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,6 +68,31 @@ export function MedicationsList() {
   }
 
   const active = meds.filter((m) => m.is_active)
+
+  async function handleAudit(med: ApiMedication, file: File) {
+    const rawCount = window.prompt("Boshlang'ich tablet soni nechta edi?", "30")
+    if (rawCount === null) return
+    const startingCount = Number.parseInt(rawCount, 10)
+    if (!Number.isFinite(startingCount) || startingCount < 1) {
+      toast.error("Boshlang'ich son noto'g'ri")
+      return
+    }
+    setAuditingId(med.id)
+    try {
+      const imageBase64 = await fileToBase64(file)
+      const result = await api.auditPillBottle(med.id, {
+        image_base64: imageBase64,
+        mime_type: file.type || "image/jpeg",
+        starting_count: startingCount,
+      })
+      setAudits((prev) => ({ ...prev, [med.id]: result }))
+      toast.success(result.patient_message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Pill bottle audit ishlamadi")
+    } finally {
+      setAuditingId(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -116,7 +144,14 @@ export function MedicationsList() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {active.map((med) => (
-            <MedCard key={med.id} med={med} onDelete={() => setToDelete(med)} />
+            <MedCard
+              key={med.id}
+              med={med}
+              audit={audits[med.id]}
+              auditing={auditingId === med.id}
+              onAudit={handleAudit}
+              onDelete={() => setToDelete(med)}
+            />
           ))}
         </div>
       )}
@@ -154,10 +189,16 @@ export function MedicationsList() {
 
 function MedCard({
   med,
+  audit,
+  auditing,
+  onAudit,
   onDelete,
   archived,
 }: {
   med: ApiMedication
+  audit?: PillBottleAuditResult
+  auditing?: boolean
+  onAudit?: (med: ApiMedication, file: File) => void
   onDelete?: () => void
   archived?: boolean
 }) {
@@ -216,7 +257,73 @@ function MedCard({
         </div>
 
         {med.instructions && <p className="line-clamp-2 text-xs text-muted-foreground">{med.instructions}</p>}
+
+        {!archived && onAudit && (
+          <label className={cn(
+            "flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted",
+            auditing && "pointer-events-none opacity-60",
+          )}>
+            {auditing ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+            Smart bottle audit
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ""
+                if (file) onAudit(med, file)
+              }}
+            />
+          </label>
+        )}
+
+        {audit && <PillAuditResult audit={audit} />}
       </CardContent>
     </Card>
   )
+}
+
+function PillAuditResult({ audit }: { audit: PillBottleAuditResult }) {
+  const badge = auditBadge(audit.signal)
+  return (
+    <div className={cn(
+      "rounded-2xl border p-3 text-xs",
+      audit.risk_flag ? "border-[var(--risk-high)]/30 bg-[var(--risk-high)]/10" : "border-primary/20 bg-primary/5",
+    )}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={badge.variant} className="rounded-full">
+          <ScanSearch className="size-3" />
+          {badge.label}
+        </Badge>
+        <span className="text-muted-foreground">{audit.count_confidence}% confidence</span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <AuditMetric label="Ko'rindi" value={audit.visible_count ?? "?"} />
+        <AuditMetric label="Kutilgan" value={audit.expected_remaining} />
+        <AuditMetric label="Farq" value={audit.difference ?? "?"} />
+      </div>
+      <p className="mt-3 leading-relaxed text-foreground">{audit.patient_message}</p>
+      {audit.observations.length > 0 && (
+        <p className="mt-1 leading-relaxed text-muted-foreground">{audit.observations.slice(0, 2).join(" · ")}</p>
+      )}
+    </div>
+  )
+}
+
+function AuditMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl bg-background/70 px-2 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">{value}</p>
+    </div>
+  )
+}
+
+function auditBadge(signal: string): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+  if (signal === "possible_missed") return { label: "Missed ehtimoli", variant: "destructive" }
+  if (signal === "possible_extra_taken") return { label: "Doza chalkashuvi", variant: "destructive" }
+  if (signal === "on_track") return { label: "Jadvalga mos", variant: "default" }
+  return { label: "Qayta rasm kerak", variant: "secondary" }
 }

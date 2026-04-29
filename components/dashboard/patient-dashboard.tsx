@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useI18n } from "@/lib/i18n/provider"
 import { useAuth } from "@/lib/auth/provider"
-import { api, type ApiRisk, type FamilyConnection, type MedicationPhotoVerification, type PatientAnalytics, type SideEffectCalendar, type SideEffectCalendarCard, type TodayDose, type VisualDotVerification } from "@/lib/api"
+import { api, type ApiRisk, type FamilyConnection, type MdrCostCalculator, type MedicationPhotoVerification, type PatientAnalytics, type SideEffectCalendar, type SideEffectCalendarCard, type TodayDose, type VisualDotVerification } from "@/lib/api"
 import type { Dose } from "@/lib/types"
 import { formatLongDate, riskFromScore } from "@/lib/format"
 import { RiskGauge } from "@/components/shared/risk-indicator"
@@ -27,6 +27,7 @@ export function PatientDashboard() {
   const [doses, setDoses] = useState<Dose[]>([])
   const [analytics, setAnalytics] = useState<PatientAnalytics | null>(null)
   const [risk, setRisk] = useState<ApiRisk | null>(null)
+  const [mdrCost, setMdrCost] = useState<MdrCostCalculator | null>(null)
   const [sideEffectCalendar, setSideEffectCalendar] = useState<SideEffectCalendar | null>(null)
   const [family, setFamily] = useState<FamilyConnection[]>([])
   const [moodReply, setMoodReply] = useState<string | null>(null)
@@ -44,11 +45,12 @@ export function PatientDashboard() {
       setLoading(true)
       setError(null)
       try {
-        const [today, analyticsData, riskData, sideEffectsData, familyData] = await Promise.all([
+        const [today, analyticsData, riskData, sideEffectsData, mdrCostData, familyData] = await Promise.all([
           api.todayDoses(),
           api.patientAnalytics(),
           api.currentRisk(),
           api.sideEffectCalendar().catch(() => null),
+          api.mdrCostCalculator().catch(() => null),
           api.familyList().catch(() => []),
         ])
         if (cancelled) return
@@ -56,6 +58,7 @@ export function PatientDashboard() {
         setAnalytics(analyticsData)
         setRisk(riskData)
         setSideEffectCalendar(sideEffectsData)
+        setMdrCost(mdrCostData)
         setFamily(familyData)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Dashboard yuklanmadi")
@@ -331,6 +334,7 @@ export function PatientDashboard() {
           </details>
         </section>
 
+        <MdrCostCard mdr={mdrCost} />
         <StreakCard analytics={analytics} />
         <FamilyCard connections={family} />
       </div>
@@ -349,6 +353,45 @@ export function PatientDashboard() {
         <span className="hidden text-sm font-semibold sm:inline">{t("dashboard.aiCompanion")}</span>
       </button>
     </>
+  )
+}
+
+function MdrCostCard({ mdr }: { mdr: MdrCostCalculator | null }) {
+  if (!mdr) return null
+  const tone =
+    mdr.risk_level === "critical"
+      ? "border-destructive/35 bg-destructive/10"
+      : mdr.risk_level === "high"
+        ? "border-[var(--risk-high)]/35 bg-[var(--risk-high)]/10"
+        : "border-border/60 bg-card"
+  return (
+    <section className={cn("rounded-3xl border p-5 shadow-sm sm:p-6", tone)}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-semibold text-foreground">
+            <Flame className="size-3.5 text-[var(--risk-high)]" />
+            MDR-TB cost calculator
+          </div>
+          <h2 className="mt-3 text-lg font-semibold text-foreground">To'xtash narxi</h2>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold tabular-nums text-foreground">{mdr.risk_percent}%</p>
+          <p className="text-xs uppercase text-muted-foreground">{mdr.risk_level}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-foreground">{mdr.patient_message}</p>
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-2xl bg-background/70 p-3">
+          <p className="text-muted-foreground">MDR davolanish</p>
+          <p className="mt-1 font-semibold text-foreground">{mdr.mdr_scenario.duration_months} oy</p>
+        </div>
+        <div className="rounded-2xl bg-background/70 p-3">
+          <p className="text-muted-foreground">Taxminiy xarajat</p>
+          <p className="mt-1 font-semibold text-foreground">${mdr.mdr_scenario.estimated_cost_usd.toLocaleString()}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{mdr.disclaimer}</p>
+    </section>
   )
 }
 
