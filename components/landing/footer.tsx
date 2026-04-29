@@ -25,8 +25,8 @@ export function LandingFooter() {
           <a href="#" className="hover:text-foreground">
             {locale === "uz" ? "Shartlar" : locale === "ru" ? "Условия" : "Terms"}
           </a>
-          <a href="mailto:hello@aihamroh.uz" className="hover:text-foreground">
-            hello@aihamroh.uz
+          <a href="mailto:hello@noskip-ai.uz" className="hover:text-foreground">
+            hello@noskip-ai.uz
           </a>
         </div>
       </div>

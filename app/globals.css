@@ -4,27 +4,28 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Base — soft icy blue page background, deep navy ink */
-  --background: oklch(0.98 0.012 240);
-  --foreground: oklch(0.22 0.06 260);
+  /* Base — soft icy blue page background, deep navy ink. Tuned to harmonise
+     with the brand mark's light → mid sky-blue gradient ramp. */
+  --background: oklch(0.985 0.014 235);
+  --foreground: oklch(0.24 0.07 262);
 
   /* Surfaces */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.06 260);
+  --card-foreground: oklch(0.24 0.07 262);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.06 260);
+  --popover-foreground: oklch(0.24 0.07 262);
 
-  /* Primary — deep medical navy (#1e3a8a / #1d4ed8 family) */
-  --primary: oklch(0.4 0.16 262);
+  /* Primary — deep medical navy, matches the wordmark ink */
+  --primary: oklch(0.38 0.17 264);
   --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary — light icy blue surface used for stat-icon badges */
-  --secondary: oklch(0.93 0.035 240);
-  --secondary-foreground: oklch(0.34 0.14 262);
+  /* Secondary — pale icy blue surface for stat-icon badges */
+  --secondary: oklch(0.94 0.04 232);
+  --secondary-foreground: oklch(0.34 0.15 262);
 
   /* Muted neutrals (still cool-toned) */
-  --muted: oklch(0.96 0.012 240);
-  --muted-foreground: oklch(0.5 0.04 250);
+  --muted: oklch(0.965 0.013 235);
+  --muted-foreground: oklch(0.5 0.045 250);
 
   /* Accent — coral red used for stat percentages and emphasis */
   --accent: oklch(0.96 0.04 25);
@@ -34,10 +35,21 @@
   --destructive: oklch(0.6 0.22 28);
   --destructive-foreground: oklch(0.99 0 0);
 
-  /* Borders + inputs */
-  --border: oklch(0.9 0.018 240);
-  --input: oklch(0.9 0.018 240);
-  --ring: oklch(0.4 0.16 262);
+  /* Borders + inputs (very subtle blue tint) */
+  --border: oklch(0.91 0.022 235);
+  --input: oklch(0.91 0.022 235);
+  --ring: oklch(0.38 0.17 264);
+
+  /* ------------------------------------------------------------------------
+     Brand gradient ramp — sampled from the logo asset. Used for hero
+     decoratives (blobs, rings, soft glows behind the phone mockup) so that
+     the surrounding atmosphere echoes the icon's light → mid sky-blue
+     gradient without changing semantic UI tokens.
+     ------------------------------------------------------------------------ */
+  --brand-soft: oklch(0.97 0.025 232);   /* near-white icy tint */
+  --brand-light: oklch(0.9 0.06 232);    /* light sky-blue */
+  --brand-mid: oklch(0.74 0.11 240);     /* mid sky-blue (icon mid-tone) */
+  --brand-deep: oklch(0.5 0.16 258);     /* deep brand blue */
 
   /* Risk semantic colors — green (good), amber, orange, red (critical) */
   --risk-low: oklch(0.66 0.16 150);
@@ -144,6 +156,33 @@
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
+}
+
+/* ----------------------------------------------------------------------------
+   Brand atmosphere utilities — derived from the icon's gradient ramp. Use
+   these for hero backgrounds, decorative blobs, halo rings, and any place the
+   palette should "wrap" the brand mark in a matching aura.
+   ---------------------------------------------------------------------------- */
+.bg-brand-aurora {
+  background-image: radial-gradient(
+      ellipse at 30% 20%,
+      var(--brand-soft) 0%,
+      transparent 55%
+    ),
+    radial-gradient(ellipse at 70% 80%, var(--brand-light) 0%, transparent 60%),
+    linear-gradient(180deg, var(--brand-soft) 0%, var(--background) 100%);
+}
+
+.bg-brand-mark {
+  background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand-mid) 100%);
+}
+
+.text-brand-deep {
+  color: var(--brand-deep);
+}
+
+.ring-brand {
+  --tw-ring-color: var(--brand-mid);
 }
 
 /* Pulse ring around the AI Companion FAB — uses navy primary */

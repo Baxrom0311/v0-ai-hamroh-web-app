@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import {
   ArrowRight,
   Bell,
@@ -32,18 +33,28 @@ export function LandingHero() {
   const { t, locale } = useI18n()
 
   return (
-    <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-b from-secondary/60 via-background to-background">
-      {/* Decorative soft blue glow */}
+    <section className="bg-brand-aurora relative overflow-hidden border-b border-border/60">
+      {/* Soft blue glow halo above the hero */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[920px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+        className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[920px] -translate-x-1/2 rounded-full blur-3xl"
+        style={{ background: "var(--brand-light)", opacity: 0.45 }}
       />
-      {/* Faint bowl-of-Hygieia behind the centre column on lg+ */}
+      {/* Real brand mark sitting faintly behind the centre column on lg+. We
+          use the source asset directly so the background and foreground
+          marks share identical proportions and gradient. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 text-primary/10 lg:block"
+        className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 select-none lg:block"
       >
-        <BowlOfHygieiaIllustration className="h-[640px] w-[640px]" />
+        <Image
+          src="/brand/noskip-ai-logo.png"
+          alt=""
+          width={1535}
+          height={1024}
+          className="h-[640px] w-auto opacity-[0.08]"
+          priority={false}
+        />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 py-12 md:py-16 lg:px-6 lg:py-20">
@@ -513,31 +524,4 @@ function SectionEyebrow({
   )
 }
 
-function BowlOfHygieiaIllustration({ className }: { className?: string }) {
-  // Soft, large decorative version of the brand mark — sits behind the phone
-  // mockup on lg+ screens. Kept as a separate inline SVG so we can use a much
-  // thinner stroke than the small logo (which would otherwise feel chunky at
-  // this scale).
-  return (
-    <svg
-      viewBox="0 0 240 240"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      {/* Bowl */}
-      <path d="M40 140 Q 120 230 200 140" />
-      <path d="M36 140 H 204" />
-      {/* Stem */}
-      <path d="M120 140 V 30" />
-      {/* Snake — coiled twice around stem */}
-      <path d="M120 30 Q 80 40 88 60 Q 96 80 120 80 Q 144 80 136 100 Q 128 120 100 120 Q 84 130 96 138" />
-      {/* Snake head */}
-      <circle cx="120" cy="26" r="6" fill="currentColor" />
-    </svg>
-  )
-}
+

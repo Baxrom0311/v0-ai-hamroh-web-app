@@ -12,6 +12,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Logo } from "@/components/shared/logo"
 import { localeNames, type Locale } from "@/lib/i18n/translations"
 import {
   User,
@@ -466,9 +467,7 @@ function AboutPanel() {
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <div className="flex items-center gap-3">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-secondary font-display font-bold text-primary">
-            <span className="text-base">N-AI</span>
-          </div>
+          <Logo variant="iconOnly" size="lg" href="#" />
           <div>
             <p className="font-display font-semibold">NoSkip-AI</p>
             <p className="text-muted-foreground">{t("settings.version")} 1.0.0</p>
