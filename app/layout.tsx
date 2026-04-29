@@ -10,12 +10,23 @@ export const metadata: Metadata = {
   description:
     "NoSkipAI — surunkali kasalliklar bilan davolanayotgan bemorlar uchun aqlli eslatmalar, AI suhbatdosh va oilaviy qo'llab-quvvatlash platformasi.",
   generator: "v0.app",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "NoSkipAI",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0a2e6d",
+  themeColor: "#10b981",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -25,6 +36,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uz" className="bg-background" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className="overflow-x-clip font-sans antialiased">
         <I18nProvider>
           <AuthProvider>
@@ -33,6 +49,17 @@ export default function RootLayout({
           </AuthProvider>
         </I18nProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )

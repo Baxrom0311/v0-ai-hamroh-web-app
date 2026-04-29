@@ -258,7 +258,7 @@ export function PatientDashboard() {
                   <AlertTriangle className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground">Predictive missed-dose alert</p>
+                  <p className="text-sm font-semibold text-foreground">{locale === "uz" ? "Doza o'tkazib yuborish bashorati" : locale === "ru" ? "Прогноз пропуска дозы" : "Predictive missed-dose alert"}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{predictiveAlerts[0].alert_message}</p>
                 </div>
                 <Button
@@ -357,6 +357,7 @@ export function PatientDashboard() {
 }
 
 function MdrCostCard({ mdr }: { mdr: MdrCostCalculator | null }) {
+  const { locale } = useI18n()
   if (!mdr) return null
   const tone =
     mdr.risk_level === "critical"
@@ -370,9 +371,9 @@ function MdrCostCard({ mdr }: { mdr: MdrCostCalculator | null }) {
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-semibold text-foreground">
             <Flame className="size-3.5 text-[var(--risk-high)]" />
-            MDR-TB cost calculator
+            {locale === "uz" ? "MDR-TB xarajat kalkulyatori" : locale === "ru" ? "Калькулятор стоимости MDR-TB" : "MDR-TB cost calculator"}
           </div>
-          <h2 className="mt-3 text-lg font-semibold text-foreground">To'xtash narxi</h2>
+          <h2 className="mt-3 text-lg font-semibold text-foreground">{locale === "uz" ? "To'xtash narxi" : locale === "ru" ? "Цена остановки" : "Cost of stopping"}</h2>
         </div>
         <div className="text-right">
           <p className="text-3xl font-bold tabular-nums text-foreground">{mdr.risk_percent}%</p>
@@ -382,11 +383,11 @@ function MdrCostCard({ mdr }: { mdr: MdrCostCalculator | null }) {
       <p className="mt-3 text-sm leading-relaxed text-foreground">{mdr.patient_message}</p>
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-2xl bg-background/70 p-3">
-          <p className="text-muted-foreground">MDR davolanish</p>
-          <p className="mt-1 font-semibold text-foreground">{mdr.mdr_scenario.duration_months} oy</p>
+          <p className="text-muted-foreground">{locale === "uz" ? "MDR davolanish" : locale === "ru" ? "Лечение MDR" : "MDR treatment"}</p>
+          <p className="mt-1 font-semibold text-foreground">{mdr.mdr_scenario.duration_months} {locale === "uz" ? "oy" : locale === "ru" ? "мес" : "mo"}</p>
         </div>
         <div className="rounded-2xl bg-background/70 p-3">
-          <p className="text-muted-foreground">Taxminiy xarajat</p>
+          <p className="text-muted-foreground">{locale === "uz" ? "Taxminiy xarajat" : locale === "ru" ? "Примерная стоимость" : "Estimated cost"}</p>
           <p className="mt-1 font-semibold text-foreground">${mdr.mdr_scenario.estimated_cost_usd.toLocaleString()}</p>
         </div>
       </div>
@@ -402,6 +403,7 @@ function SideEffectCalendarCardView({
   calendar: SideEffectCalendar | null
   onSpeak: (message: string) => void
 }) {
+  const { locale } = useI18n()
   const mainCards = [...(calendar?.today ?? []), ...(calendar?.upcoming ?? [])].slice(0, 3)
   if (!calendar || mainCards.length === 0) return null
 
@@ -412,9 +414,9 @@ function SideEffectCalendarCardView({
         <div className="min-w-0">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
             <CalendarClock className="size-3.5" />
-            Predictive side-effect calendar
+            {locale === "uz" ? "Yon ta'sir bashorat kalendari" : locale === "ru" ? "Календарь прогноза побочных эффектов" : "Predictive side-effect calendar"}
           </div>
-          <h2 className="mt-3 text-lg font-semibold text-foreground">Yon ta'sirni oldindan bilish</h2>
+          <h2 className="mt-3 text-lg font-semibold text-foreground">{locale === "uz" ? "Yon ta'sirni oldindan bilish" : locale === "ru" ? "Предсказание побочных эффектов" : "Predict side effects"}</h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{calendar.summary}</p>
         </div>
         <Button
@@ -425,7 +427,7 @@ function SideEffectCalendarCardView({
           onClick={() => onSpeak(mainCards[0]?.message || calendar.patient_message)}
         >
           <Volume2 className="mr-1 size-4" />
-          Ovoz
+          {locale === "uz" ? "Ovoz" : locale === "ru" ? "Голос" : "Voice"}
         </Button>
       </div>
 
@@ -439,7 +441,7 @@ function SideEffectCalendarCardView({
         <div className="flex items-start gap-2">
           <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", urgentCount ? "text-[var(--risk-high)]" : "text-amber-700")} />
           <div>
-            <p className="text-sm font-semibold text-foreground">Red flag belgilar</p>
+            <p className="text-sm font-semibold text-foreground">{locale === "uz" ? "Red flag belgilar" : locale === "ru" ? "Тревожные признаки" : "Red flag symptoms"}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {calendar.red_flags.slice(0, 2).join(" · ")}
             </p>
@@ -471,9 +473,9 @@ function SideEffectMiniCard({ card }: { card: SideEffectCalendarCard }) {
 }
 
 function sideEffectBadge(severity: string): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
-  if (severity === "urgent") return { label: "Shifokor signali", variant: "destructive" }
-  if (severity === "watch") return { label: "Kuzatish", variant: "secondary" }
-  return { label: "Kutiladigan", variant: "outline" }
+  if (severity === "urgent") return { label: "⚠️", variant: "destructive" }
+  if (severity === "watch") return { label: "👀", variant: "secondary" }
+  return { label: "📋", variant: "outline" }
 }
 
 function CriticalBanner() {
@@ -624,13 +626,13 @@ function DoseItem({
         <div className="mt-3 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={visualDot.verified ? "default" : "secondary"}>
-              Visual DOT: {visualDot.verified ? "verified" : "review"}
+              Visual DOT: {visualDot.verified ? (locale === "uz" ? "tasdiqlandi" : locale === "ru" ? "подтверждено" : "verified") : (locale === "uz" ? "tekshirilmoqda" : locale === "ru" ? "на проверке" : "review")}
             </Badge>
-            <span className="text-muted-foreground">{visualDot.confidence}% confidence</span>
+            <span className="text-muted-foreground">{visualDot.confidence}% {locale === "uz" ? "ishonchlilik" : locale === "ru" ? "уверенность" : "confidence"}</span>
             {visualDot.marked_taken && (
               <span className="inline-flex items-center gap-1 text-[var(--risk-low)]">
                 <ShieldCheck className="size-3.5" />
-                Dose logged
+                {locale === "uz" ? "Doza saqlandi" : locale === "ru" ? "Доза сохранена" : "Dose logged"}
               </span>
             )}
           </div>
@@ -660,17 +662,17 @@ function DoseItem({
           size="sm"
           variant="outline"
           className="h-9 rounded-xl bg-transparent text-xs"
-          onClick={() => onSpeak(dose.alert_message || `${dose.scheduled_time} da ${dose.medication_name} ${dose.dosage} ichish vaqti.`)}
+          onClick={() => onSpeak(dose.alert_message || (locale === "uz" ? `${dose.scheduled_time} da ${dose.medication_name} ${dose.dosage} ichish vaqti.` : locale === "ru" ? `Время принять ${dose.medication_name} ${dose.dosage} в ${dose.scheduled_time}.` : `Time to take ${dose.medication_name} ${dose.dosage} at ${dose.scheduled_time}.`))}
         >
           <Volume2 className="mr-1 size-3.5" />
-          Voice reminder
+          {locale === "uz" ? "Ovozli eslatma" : locale === "ru" ? "Голосовое напоминание" : "Voice reminder"}
         </Button>
         <label className={cn(
           "inline-flex h-9 cursor-pointer items-center rounded-xl border border-border bg-background px-3 text-xs font-medium hover:bg-muted",
           verifying && "pointer-events-none opacity-60",
         )}>
           {verifying ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <Camera className="mr-1 size-3.5" />}
-          Photo verify
+          {locale === "uz" ? "Rasm tekshirish" : locale === "ru" ? "Фото проверка" : "Photo verify"}
           <input
             type="file"
             accept="image/*"
@@ -701,7 +703,7 @@ function DoseItem({
 
 async function captureVisualDotFrames(): Promise<Array<{ image_base64: string; mime_type: string }>> {
   if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("Brauzer kamera yozishni qo'llab-quvvatlamaydi")
+    throw new Error("Camera not supported")
   }
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
@@ -725,7 +727,7 @@ async function captureVisualDotFrames(): Promise<Array<{ image_base64: string; m
     canvas.width = width
     canvas.height = height
     const ctx = canvas.getContext("2d")
-    if (!ctx) throw new Error("Kamera frame olinmadi")
+    if (!ctx) throw new Error("Camera frame capture failed")
 
     const frames: Array<{ image_base64: string; mime_type: string }> = []
     for (const waitMs of [700, 1500, 1500]) {
@@ -852,7 +854,7 @@ function riskTextFactors(risk: ApiRisk | null) {
   })
   if (factors?.length) return factors
   if (risk?.ai_analysis) return [risk.ai_analysis]
-  return ["Hozircha xavf omillari topilmadi"]
+  return ["—"]
 }
 
 function initials(name: string) {
