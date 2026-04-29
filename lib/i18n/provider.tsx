@@ -3,6 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { type Locale, locales, t as translate } from "./translations"
 
+// Re-export so consumers can import Locale alongside useI18n from one module.
+export type { Locale }
+
 type I18nContextValue = {
   locale: Locale
   setLocale: (l: Locale) => void

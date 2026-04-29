@@ -4,90 +4,91 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Base */
-  --background: oklch(0.99 0.005 150);
-  --foreground: oklch(0.21 0.03 240);
+  /* Base — soft icy blue page background, deep navy ink */
+  --background: oklch(0.98 0.012 240);
+  --foreground: oklch(0.22 0.06 260);
 
   /* Surfaces */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.03 240);
+  --card-foreground: oklch(0.22 0.06 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.03 240);
+  --popover-foreground: oklch(0.22 0.06 260);
 
-  /* Primary — emerald (#10b981) */
-  --primary: oklch(0.7 0.15 162);
+  /* Primary — deep medical navy (#1e3a8a / #1d4ed8 family) */
+  --primary: oklch(0.4 0.16 262);
   --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary — blue (medical, calm) */
-  --secondary: oklch(0.96 0.015 230);
-  --secondary-foreground: oklch(0.34 0.12 240);
+  /* Secondary — light icy blue surface used for stat-icon badges */
+  --secondary: oklch(0.93 0.035 240);
+  --secondary-foreground: oklch(0.34 0.14 262);
 
-  /* Muted neutrals */
-  --muted: oklch(0.97 0.005 240);
-  --muted-foreground: oklch(0.5 0.02 240);
+  /* Muted neutrals (still cool-toned) */
+  --muted: oklch(0.96 0.012 240);
+  --muted-foreground: oklch(0.5 0.04 250);
 
-  /* Accent — soft mint */
-  --accent: oklch(0.95 0.04 160);
-  --accent-foreground: oklch(0.34 0.12 162);
+  /* Accent — coral red used for stat percentages and emphasis */
+  --accent: oklch(0.96 0.04 25);
+  --accent-foreground: oklch(0.55 0.21 28);
 
   /* Destructive (errors) */
-  --destructive: oklch(0.62 0.22 25);
+  --destructive: oklch(0.6 0.22 28);
   --destructive-foreground: oklch(0.99 0 0);
 
   /* Borders + inputs */
-  --border: oklch(0.92 0.008 240);
-  --input: oklch(0.92 0.008 240);
-  --ring: oklch(0.7 0.15 162);
+  --border: oklch(0.9 0.018 240);
+  --input: oklch(0.9 0.018 240);
+  --ring: oklch(0.4 0.16 262);
 
-  /* Risk semantic colors */
-  --risk-low: oklch(0.72 0.17 150);
-  --risk-medium: oklch(0.83 0.16 90);
-  --risk-high: oklch(0.74 0.18 55);
-  --risk-critical: oklch(0.62 0.22 25);
+  /* Risk semantic colors — green (good), amber, orange, red (critical) */
+  --risk-low: oklch(0.66 0.16 150);
+  --risk-medium: oklch(0.78 0.16 80);
+  --risk-high: oklch(0.7 0.18 50);
+  --risk-critical: oklch(0.6 0.22 28);
 
   /* Charts */
-  --chart-1: oklch(0.7 0.15 162); /* emerald */
-  --chart-2: oklch(0.62 0.16 240); /* blue */
-  --chart-3: oklch(0.83 0.16 90); /* amber */
-  --chart-4: oklch(0.74 0.18 55); /* orange */
-  --chart-5: oklch(0.62 0.22 25); /* red */
+  --chart-1: oklch(0.4 0.16 262); /* navy */
+  --chart-2: oklch(0.6 0.14 240); /* sky */
+  --chart-3: oklch(0.6 0.22 28);  /* coral */
+  --chart-4: oklch(0.78 0.16 80); /* amber */
+  --chart-5: oklch(0.66 0.16 150); /* green */
 
   --radius: 1rem;
 
-  --sidebar: oklch(0.99 0.005 150);
-  --sidebar-foreground: oklch(0.21 0.03 240);
-  --sidebar-primary: oklch(0.7 0.15 162);
+  --sidebar: oklch(0.98 0.012 240);
+  --sidebar-foreground: oklch(0.22 0.06 260);
+  --sidebar-primary: oklch(0.4 0.16 262);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.95 0.04 160);
-  --sidebar-accent-foreground: oklch(0.34 0.12 162);
-  --sidebar-border: oklch(0.92 0.008 240);
-  --sidebar-ring: oklch(0.7 0.15 162);
+  --sidebar-accent: oklch(0.93 0.035 240);
+  --sidebar-accent-foreground: oklch(0.34 0.14 262);
+  --sidebar-border: oklch(0.9 0.018 240);
+  --sidebar-ring: oklch(0.4 0.16 262);
 }
 
 .dark {
-  --background: oklch(0.18 0.02 240);
-  --foreground: oklch(0.97 0.005 150);
-  --card: oklch(0.22 0.02 240);
-  --card-foreground: oklch(0.97 0.005 150);
-  --popover: oklch(0.22 0.02 240);
-  --popover-foreground: oklch(0.97 0.005 150);
-  --primary: oklch(0.72 0.16 162);
-  --primary-foreground: oklch(0.18 0.02 240);
-  --secondary: oklch(0.27 0.02 240);
-  --secondary-foreground: oklch(0.97 0.005 150);
-  --muted: oklch(0.27 0.02 240);
-  --muted-foreground: oklch(0.7 0.02 240);
-  --accent: oklch(0.3 0.06 162);
-  --accent-foreground: oklch(0.97 0.005 150);
-  --destructive: oklch(0.6 0.22 25);
+  --background: oklch(0.18 0.04 262);
+  --foreground: oklch(0.97 0.012 240);
+  --card: oklch(0.22 0.05 262);
+  --card-foreground: oklch(0.97 0.012 240);
+  --popover: oklch(0.22 0.05 262);
+  --popover-foreground: oklch(0.97 0.012 240);
+  --primary: oklch(0.62 0.18 262);
+  --primary-foreground: oklch(0.18 0.04 262);
+  --secondary: oklch(0.27 0.04 262);
+  --secondary-foreground: oklch(0.97 0.012 240);
+  --muted: oklch(0.27 0.04 262);
+  --muted-foreground: oklch(0.7 0.03 250);
+  --accent: oklch(0.3 0.08 28);
+  --accent-foreground: oklch(0.97 0.012 240);
+  --destructive: oklch(0.6 0.22 28);
   --destructive-foreground: oklch(0.97 0 0);
-  --border: oklch(0.3 0.02 240);
-  --input: oklch(0.3 0.02 240);
-  --ring: oklch(0.72 0.16 162);
+  --border: oklch(0.3 0.04 262);
+  --input: oklch(0.3 0.04 262);
+  --ring: oklch(0.62 0.18 262);
 }
 
 @theme inline {
   --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-poppins), var(--font-inter), system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -138,17 +139,23 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Display font for hero / section headlines */
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
 }
 
+/* Pulse ring around the AI Companion FAB — uses navy primary */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 oklch(0.7 0.15 162 / 0.45);
+    box-shadow: 0 0 0 0 oklch(0.4 0.16 262 / 0.45);
   }
   70% {
-    box-shadow: 0 0 0 12px oklch(0.7 0.15 162 / 0);
+    box-shadow: 0 0 0 12px oklch(0.4 0.16 262 / 0);
   }
   100% {
-    box-shadow: 0 0 0 0 oklch(0.7 0.15 162 / 0);
+    box-shadow: 0 0 0 0 oklch(0.4 0.16 262 / 0);
   }
 }
 

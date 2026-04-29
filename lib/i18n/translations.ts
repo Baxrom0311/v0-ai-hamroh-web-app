@@ -9,7 +9,7 @@ export const localeNames: Record<Locale, string> = {
 
 const dict = {
   common: {
-    appName: { uz: "AI Hamroh", ru: "AI Hamroh", en: "AI Hamroh" },
+    appName: { uz: "NoSkip-AI", ru: "NoSkip-AI", en: "NoSkip-AI" },
     welcome: { uz: "Xush kelibsiz", ru: "Добро пожаловать", en: "Welcome" },
     login: { uz: "Kirish", ru: "Войти", en: "Sign in" },
     register: { uz: "Ro'yxatdan o'tish", ru: "Регистрация", en: "Sign up" },
@@ -49,19 +49,19 @@ const dict = {
   },
   landing: {
     heroBadge: {
-      uz: "AI bilan ishonchli davolanish",
-      ru: "Уверенное лечение с AI",
-      en: "Confident treatment with AI",
+      uz: "AI yordamida dori qabulini unutishni oldini olish",
+      ru: "AI помогает не пропускать приём лекарств",
+      en: "AI helps prevent missed doses",
     },
     heroTitle: {
-      uz: "Davolanishingizning ishonchli yordamchisi",
-      ru: "Надёжный помощник в вашем лечении",
-      en: "Your trusted companion in treatment",
+      uz: "Dori qabulini hech qachon o'tkazib yubormang",
+      ru: "Никогда не пропускайте приём лекарств",
+      en: "Never skip a dose again",
     },
     heroSubtitle: {
-      uz: "Aqlli eslatmalar, AI suhbatdosh va oilaviy qo'llab-quvvatlash bilan dorilaringizni vaqtida iching.",
-      ru: "Умные напоминания, AI-собеседник и поддержка близких — принимайте лекарства вовремя.",
-      en: "Smart reminders, an AI companion, and family support — take your medication on time.",
+      uz: "NoSkip-AI — xulq tahlili, aqlli eslatmalar va yaqinlaringizning qo'llab-quvvatlashi bilan davolanish rejimingizni saqlaydi.",
+      ru: "NoSkip-AI анализирует ваше поведение, шлёт умные напоминания и подключает близких — чтобы лечение шло без сбоев.",
+      en: "NoSkip-AI analyses your behaviour, sends smart reminders, and rallies your loved ones — so your treatment never breaks.",
     },
     heroCta: { uz: "Bepul boshlash", ru: "Начать бесплатно", en: "Get started free" },
     heroSecondaryCta: { uz: "Demo ko'rish", ru: "Посмотреть демо", en: "Watch demo" },
@@ -76,7 +76,7 @@ const dict = {
       ru: "Всё, что вам нужно",
       en: "Everything you need",
     },
-    feature1Title: { uz: "AI Hamroh bilan suhbat", ru: "Беседа с AI-помощником", en: "Talk with your AI companion" },
+    feature1Title: { uz: "NoSkip-AI bilan suhbat", ru: "Беседа с NoSkip-AI", en: "Talk with NoSkip-AI" },
     feature1Desc: {
       uz: "O'zbek tilida 24/7 yordam — yon ta'sirlar, savollar yoki shunchaki gaplashish uchun.",
       ru: "Поддержка 24/7 на русском — побочные эффекты, вопросы или просто разговор.",
@@ -132,7 +132,7 @@ const dict = {
       ru: "Спутник на пути к здоровью",
       en: "Your companion on the road to health",
     },
-    footerCopy: { uz: "© 2025 AI Hamroh", ru: "© 2025 AI Hamroh", en: "© 2025 AI Hamroh" },
+    footerCopy: { uz: "© 2025 NoSkip-AI", ru: "© 2025 NoSkip-AI", en: "© 2025 NoSkip-AI" },
   },
   auth: {
     loginTitle: { uz: "Xush kelibsiz!", ru: "С возвращением!", en: "Welcome back!" },
@@ -154,7 +154,7 @@ const dict = {
       ru: "Демо: +998 90 111 11 11 / demo1234",
       en: "Demo: +998 90 111 11 11 / demo1234",
     },
-    registerTitle: { uz: "Hamrohga qo'shiling", ru: "Присоединяйтесь", en: "Join AI Hamroh" },
+    registerTitle: { uz: "NoSkip-AI ga qo'shiling", ru: "Присоединяйтесь к NoSkip-AI", en: "Join NoSkip-AI" },
     registerSubtitle: {
       uz: "Davolanish yo'lida birinchi qadam",
       ru: "Первый шаг к лечению",
@@ -309,7 +309,7 @@ const dict = {
     in: { uz: "{n} keyin", ru: "через {n}", en: "in {n}" },
   },
   chat: {
-    title: { uz: "AI Hamroh", ru: "AI Hamroh", en: "AI Hamroh" },
+    title: { uz: "NoSkip-AI", ru: "NoSkip-AI", en: "NoSkip-AI" },
     online: { uz: "Onlayn", ru: "Онлайн", en: "Online" },
     typing: { uz: "Yozyapti...", ru: "Печатает...", en: "Typing..." },
     placeholder: { uz: "Xabar yozing...", ru: "Напишите сообщение...", en: "Type a message..." },
@@ -319,7 +319,7 @@ const dict = {
       en: "AI companion does not replace medical advice",
     },
     welcome: {
-      uz: "Salom! Men sizning AI Hamrohingizman. Davolanishingiz haqida har qanday savol bera olasiz.",
+      uz: "Salom! Men NoSkip-AI — sizning aqlli yordamchingiz. Davolanishingiz haqida har qanday savol bera olasiz.",
       ru: "Здравствуйте! Я ваш AI-помощник. Спрашивайте всё о вашем лечении.",
       en: "Hello! I'm your AI companion. Ask me anything about your treatment.",
     },

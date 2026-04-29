@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
 import { I18nProvider } from "@/lib/i18n/provider"
@@ -12,15 +12,24 @@ const inter = Inter({
   display: "swap",
 })
 
+// Poppins is the headline / wordmark face — gives the brand the bold,
+// rounded medical-infographic feel referenced in the design brief.
+const poppins = Poppins({
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-poppins",
+  display: "swap",
+})
+
 export const metadata: Metadata = {
-  title: "AI Hamroh — Davolanishingizning ishonchli yordamchisi",
+  title: "NoSkip-AI — Dori qabulini unutishdan himoya qiluvchi aqlli yordamchi",
   description:
-    "AI Hamroh — surunkali kasalliklar bilan davolanayotgan bemorlar uchun aqlli eslatmalar, AI suhbatdosh va oilaviy qo'llab-quvvatlash platformasi.",
+    "NoSkip-AI — surunkali kasalliklar bilan davolanayotgan bemorlar uchun AI eslatmalar, xulq tahlili va oilaviy qo'llab-quvvatlash platformasi.",
   generator: "v0.app",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#10b981",
+  themeColor: "#1e3a8a",
   width: "device-width",
   initialScale: 1,
 }
@@ -31,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="uz" className={`${inter.variable} bg-background`} suppressHydrationWarning>
+    <html lang="uz" className={`${inter.variable} ${poppins.variable} bg-background`} suppressHydrationWarning>
       <body className="overflow-x-clip font-sans antialiased">
         <I18nProvider>
           <AuthProvider>

@@ -466,11 +466,11 @@ function AboutPanel() {
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <div className="flex items-center gap-3">
-          <div className="size-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
-            AI
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-secondary font-display font-bold text-primary">
+            <span className="text-base">N-AI</span>
           </div>
           <div>
-            <p className="font-semibold">AI Hamroh</p>
+            <p className="font-display font-semibold">NoSkip-AI</p>
             <p className="text-muted-foreground">{t("settings.version")} 1.0.0</p>
           </div>
         </div>
