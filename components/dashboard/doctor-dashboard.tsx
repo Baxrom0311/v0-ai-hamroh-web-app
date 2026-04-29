@@ -229,7 +229,7 @@ function PatientRow({
       {soap && (
         <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={soap.ai_generated ? "default" : "secondary"}>{soap.ai_generated ? "AI SOAP" : "Fallback SOAP"}</Badge>
+            <Badge variant={soap.ai_generated ? "default" : "secondary"}>{soap.ai_generated ? "AI SOAP" : "SOAP Note"}</Badge>
             <span className="text-xs text-muted-foreground">{new Date(soap.generated_at).toLocaleString()}</span>
           </div>
           <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
