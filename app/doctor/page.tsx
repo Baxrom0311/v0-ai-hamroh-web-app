@@ -3,7 +3,7 @@ import { DoctorDashboard } from "@/components/dashboard/doctor-dashboard"
 
 export default function DoctorPage() {
   return (
-    <AppShell>
+    <AppShell requireRole="doctor">
       <DoctorDashboard />
     </AppShell>
   )

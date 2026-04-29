@@ -3,7 +3,7 @@ import { FamilyDashboard } from "@/components/dashboard/family-dashboard"
 
 export default function FamilyPage() {
   return (
-    <AppShell>
+    <AppShell requireRole="family">
       <FamilyDashboard />
     </AppShell>
   )

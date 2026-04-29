@@ -3,7 +3,7 @@ import { MedicationsList } from "@/components/medications/medications-list"
 
 export default function MedicationsPage() {
   return (
-    <AppShell>
+    <AppShell requireRole="patient">
       <MedicationsList />
     </AppShell>
   )

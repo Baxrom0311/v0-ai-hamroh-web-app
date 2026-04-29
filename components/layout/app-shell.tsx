@@ -55,6 +55,12 @@ function getNav(role?: string): NavItem[] {
   return patientNav
 }
 
+const routeByRole = {
+  patient: "/dashboard",
+  family: "/family",
+  doctor: "/doctor",
+}
+
 // Map mobile nav size → Tailwind grid-cols-N (must be static class names so
 // Tailwind keeps them in the build)
 const colsClass: Record<number, string> = {
@@ -78,14 +84,28 @@ export function AppShell({
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useI18n()
-  const { user, isAuthenticated, logout, setRole } = useAuth()
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
 
   useEffect(() => {
-    // Auto-set demo role for direct page access (no real auth)
-    if (!isAuthenticated && requireRole) {
-      setRole(requireRole)
+    if (isLoading) return
+    if (!isAuthenticated) {
+      router.replace("/login")
+      return
     }
-  }, [isAuthenticated, requireRole, setRole])
+    if (requireRole && user?.role !== requireRole) {
+      router.replace(routeByRole[user?.role ?? "patient"])
+    }
+  }, [isAuthenticated, isLoading, requireRole, router, user?.role])
+
+  if (isLoading || !isAuthenticated || (requireRole && user?.role !== requireRole)) {
+    return (
+      <div className="grid min-h-svh place-items-center bg-background px-4">
+        <div className="rounded-3xl border border-border/60 bg-card px-6 py-5 text-sm text-muted-foreground shadow-sm">
+          {t("common.loading")}
+        </div>
+      </div>
+    )
+  }
 
   const nav = getNav(user?.role ?? requireRole)
   const mobileItemCount = nav.length + 1 // + settings

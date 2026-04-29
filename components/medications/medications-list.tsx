@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { useT } from "@/lib/i18n/provider"
-import { mockMedications, type SimpleMedication } from "@/lib/mock-data"
+import { api, type ApiMedication } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,28 +22,56 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { Pill, Plus, Pencil, Trash2, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Medication = SimpleMedication
-
 export function MedicationsList() {
   const { t } = useT()
-  const [meds, setMeds] = useState<Medication[]>(mockMedications)
-  const [toDelete, setToDelete] = useState<Medication | null>(null)
+  const [meds, setMeds] = useState<ApiMedication[]>([])
+  const [archived, setArchived] = useState<ApiMedication[]>([])
+  const [toDelete, setToDelete] = useState<ApiMedication | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await api.medications()
+        if (!cancelled) setMeds(data)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Dorilar yuklanmadi")
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleDelete = async () => {
+    if (!toDelete) return
+    const med = toDelete
+    setToDelete(null)
+    try {
+      await api.deleteMedication(med.id)
+      setMeds((prev) => prev.filter((m) => m.id !== med.id))
+      setArchived((prev) => [{ ...med, is_active: false }, ...prev])
+      toast.success(t("common.delete"))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Xatolik")
+    }
+  }
 
   const active = meds.filter((m) => m.is_active)
-  const archived = meds.filter((m) => !m.is_active)
-
-  const handleDelete = () => {
-    if (!toDelete) return
-    setMeds((prev) => prev.map((m) => (m.id === toDelete.id ? { ...m, is_active: false } : m)))
-    setToDelete(null)
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-balance">{t("meds.title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-balance text-2xl font-semibold md:text-3xl">{t("meds.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {active.length} {t("meds.active")}
           </p>
         </div>
@@ -54,7 +83,17 @@ export function MedicationsList() {
         </Button>
       </div>
 
-      {active.length === 0 ? (
+      {error && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <Card className="rounded-2xl border-border/60">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">{t("common.loading")}</CardContent>
+        </Card>
+      ) : active.length === 0 ? (
         <Card className="rounded-2xl border-border/60">
           <CardContent className="py-12">
             <Empty>
@@ -85,7 +124,7 @@ export function MedicationsList() {
       {archived.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-muted-foreground">{t("meds.archived")}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 opacity-60">
+          <div className="grid gap-3 opacity-60 sm:grid-cols-2 lg:grid-cols-3">
             {archived.map((med) => (
               <MedCard key={med.id} med={med} archived />
             ))}
@@ -118,22 +157,22 @@ function MedCard({
   onDelete,
   archived,
 }: {
-  med: Medication
+  med: ApiMedication
   onDelete?: () => void
   archived?: boolean
 }) {
   const { t } = useT()
   return (
     <Card className={cn("rounded-2xl border-border/60 transition-shadow hover:shadow-sm", archived && "bg-muted/30")}>
-      <CardContent className="p-5 space-y-4">
+      <CardContent className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Pill className="size-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-semibold leading-tight truncate">{med.name}</h3>
-              <p className="text-sm text-muted-foreground truncate">{med.dosage}</p>
+              <h3 className="truncate font-semibold leading-tight">{med.name}</h3>
+              <p className="truncate text-sm text-muted-foreground">{med.dosage}</p>
             </div>
           </div>
           {!archived && (
@@ -157,19 +196,26 @@ function MedCard({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="size-4 shrink-0" />
           <div className="flex flex-wrap gap-1.5">
-            {med.schedule_times.map((time) => (
-              <Badge
-                key={time}
-                variant="secondary"
-                className="rounded-md font-mono text-xs bg-secondary/60 hover:bg-secondary/60"
-              >
+            {med.times.map((time) => (
+              <Badge key={time} variant="secondary" className="rounded-md bg-secondary/60 font-mono text-xs hover:bg-secondary/60">
                 {time}
               </Badge>
             ))}
           </div>
         </div>
 
-        {med.notes && <p className="text-xs text-muted-foreground line-clamp-2">{med.notes}</p>}
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <Badge variant="outline" className="rounded-md border-border/60">
+            {med.frequency}
+          </Badge>
+          {med.disease && (
+            <Badge variant="outline" className="rounded-md border-border/60">
+              {med.disease}
+            </Badge>
+          )}
+        </div>
+
+        {med.instructions && <p className="line-clamp-2 text-xs text-muted-foreground">{med.instructions}</p>}
       </CardContent>
     </Card>
   )

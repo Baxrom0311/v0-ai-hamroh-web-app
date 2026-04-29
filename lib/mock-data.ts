@@ -278,8 +278,8 @@ export const mockMedications: SimpleMedication[] = [
     name: m.name,
     dosage: m.dosage,
     schedule_times: m.times,
-    notes: m.instructions,
-    is_active: m.active,
+    notes: m.instructions ?? undefined,
+    is_active: m.active ?? m.is_active ?? true,
   })),
   {
     id: 99,

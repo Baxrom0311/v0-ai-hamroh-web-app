@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import type { DailyAdherence } from "@/lib/types"
-import type { HeatmapDay } from "@/lib/mock-data"
+export type HeatmapDay = { date: string; total: number; taken: number; missed: number }
 
 function colorForRate(rate: number): string {
   if (rate === 0) return "var(--risk-critical)"
@@ -77,12 +77,13 @@ export function AdherenceHeatmap({ data }: { data: DailyAdherence[] }) {
 
 // Adapter accepting the {date,total,taken,missed} shape used by the
 // adherence page mock. Internally maps to AdherenceHeatmap.
-export function Heatmap({ data }: { data: HeatmapDay[] }) {
+export function Heatmap({ data, weeks }: { data: HeatmapDay[]; weeks?: number }) {
   const mapped: DailyAdherence[] = data.map((d) => ({
     date: d.date,
     scheduled: d.total,
     taken: d.taken,
     rate: d.total > 0 ? Math.round((d.taken / d.total) * 100) : 0,
   }))
-  return <AdherenceHeatmap data={mapped} />
+  const limit = weeks ? weeks * 7 : mapped.length
+  return <AdherenceHeatmap data={mapped.slice(-limit)} />
 }

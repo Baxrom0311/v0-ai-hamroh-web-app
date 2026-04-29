@@ -2,11 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { User, UserRole } from "../types"
-import { MOCK_DOCTOR_USER, MOCK_FAMILY_USER, MOCK_PATIENT } from "../mock-data"
+import { api, setStoredToken } from "../api"
 
 type AuthContextValue = {
   user: User | null
   isAuthenticated: boolean
+  isLoading: boolean
   login: (phone: string, password: string) => Promise<User>
   register: (data: {
     full_name: string
@@ -18,6 +19,7 @@ type AuthContextValue = {
     language?: "uz" | "ru" | "en"
   }) => Promise<User>
   logout: () => void
+  refreshUser: () => Promise<User | null>
   setRole: (role: UserRole) => void
 }
 
@@ -25,21 +27,36 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 const STORAGE_KEY = "ai-hamroh-user"
 
-function pickMockUser(role: UserRole): User {
-  if (role === "family") return MOCK_FAMILY_USER
-  if (role === "doctor") return MOCK_DOCTOR_USER
-  return MOCK_PATIENT
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY)
-      if (raw) setUser(JSON.parse(raw))
-    } catch {
-      // ignore
+    let cancelled = false
+    async function restoreSession() {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY)
+        if (raw && !cancelled) setUser(JSON.parse(raw))
+        const token = window.localStorage.getItem("ai-hamroh-token")
+        if (!token) return
+        const profile = await api.me()
+        if (!cancelled) {
+          setUser(profile)
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
+        }
+      } catch {
+        if (!cancelled) {
+          setUser(null)
+          setStoredToken(null)
+          window.localStorage.removeItem(STORAGE_KEY)
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+    restoreSession()
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -53,53 +70,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const login = useCallback<AuthContextValue["login"]>(
-    async (phone) => {
-      // Mock: detect role from phone (demo)
-      let role: UserRole = "patient"
-      if (phone.includes("222")) role = "family"
-      else if (phone.includes("333")) role = "doctor"
-      const u = pickMockUser(role)
-      await new Promise((r) => setTimeout(r, 600))
+  const persistSession = useCallback(
+    (u: User, token: string) => {
+      setStoredToken(token)
       persist(u)
-      return u
     },
     [persist],
+  )
+
+  const login = useCallback<AuthContextValue["login"]>(
+    async (phone, password) => {
+      const session = await api.login(phone, password)
+      persistSession(session.user, session.access_token)
+      return session.user
+    },
+    [persistSession],
   )
 
   const register = useCallback<AuthContextValue["register"]>(
     async (data) => {
-      const base = pickMockUser(data.role)
-      const u: User = {
-        ...base,
-        id: Math.floor(Math.random() * 10000) + 100,
-        full_name: data.full_name,
-        phone: data.phone,
-        role: data.role,
-        age: data.age ?? base.age,
-        gender: data.gender ?? base.gender,
-        language: data.language ?? "uz",
-      }
-      await new Promise((r) => setTimeout(r, 800))
-      persist(u)
-      return u
+      const session = await api.register({
+        ...data,
+        gender: data.gender === "skip" ? null : data.gender,
+      })
+      persistSession(session.user, session.access_token)
+      return session.user
     },
-    [persist],
+    [persistSession],
   )
 
-  const logout = useCallback(() => persist(null), [persist])
+  const logout = useCallback(() => {
+    setStoredToken(null)
+    persist(null)
+  }, [persist])
 
-  const setRole = useCallback(
-    (role: UserRole) => {
-      const u = pickMockUser(role)
-      persist(u)
-    },
-    [persist],
-  )
+  const refreshUser = useCallback(async () => {
+    try {
+      const profile = await api.me()
+      persist(profile)
+      return profile
+    } catch {
+      logout()
+      return null
+    }
+  }, [logout, persist])
+
+  const setRole = useCallback((_role: UserRole) => {
+    // Demo role switching is intentionally disabled when real backend auth is active.
+  }, [])
 
   const value = useMemo(
-    () => ({ user, isAuthenticated: !!user, login, register, logout, setRole }),
-    [user, login, register, logout, setRole],
+    () => ({ user, isAuthenticated: !!user, isLoading, login, register, logout, refreshUser, setRole }),
+    [user, isLoading, login, register, logout, refreshUser, setRole],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

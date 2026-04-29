@@ -1,204 +1,20 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import {
-  AlertCircle,
-  ArrowDown,
-  Mic,
-  Send,
-  Sparkles,
-  Stethoscope,
-} from "lucide-react"
+import { AlertCircle, ArrowDown, BrainCircuit, CheckCircle2, Mic, Send, Sparkles, Stethoscope, Users } from "lucide-react"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useI18n } from "@/lib/i18n/provider"
-import { MOCK_CHAT_HISTORY } from "@/lib/mock-data"
+import { api } from "@/lib/api"
 import type { ChatMessage } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const MOCK_RESPONSES: Record<string, Record<string, ChatMessage>> = {
-  side_effect: {
-    uz: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Yon ta'sirlar haqida eshitib achindim. Iltimos, qaysi yon ta'sirni sezayapsiz? Ko'ngil aynish, bosh og'rig'i, terining sarg'ayishi yoki boshqa narsami? Bu ma'lumot shifokoringizga yuboriladi va men sizga zudlik bilan tavsiya beraman.",
-      timestamp: new Date().toISOString(),
-      suggested_actions: [
-        { label: "Shifokorga aytish", action: "contact_doctor" },
-        { label: "Ko'proq bilish", action: "learn_more" },
-      ],
-    },
-    ru: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Жаль слышать о побочных эффектах. Какие именно вы заметили — тошнота, головная боль, желтизна кожи или что-то другое? Эта информация будет передана врачу.",
-      timestamp: new Date().toISOString(),
-      suggested_actions: [
-        { label: "Сообщить врачу", action: "contact_doctor" },
-        { label: "Узнать больше", action: "learn_more" },
-      ],
-    },
-    en: {
-      id: 0,
-      role: "assistant",
-      content:
-        "I'm sorry to hear about the side effects. Which one are you experiencing — nausea, headache, yellowing of skin, or something else? This will be shared with your doctor.",
-      timestamp: new Date().toISOString(),
-      suggested_actions: [
-        { label: "Tell my doctor", action: "contact_doctor" },
-        { label: "Learn more", action: "learn_more" },
-      ],
-    },
-  },
-  forgot: {
-    uz: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Hech qisi yo'q, bu hammamiz bilan bo'ladi. Agar 4 soat ichida esladingizmi, hozir iching. Aks holda — keyingi rejaga ko'ra davom eting va dozalarni birlashtirmang. Hozir ichasizmi?",
-      timestamp: new Date().toISOString(),
-      suggested_actions: [{ label: "Hozir ichdim", action: "log_taken" }],
-    },
-    ru: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Ничего страшного, бывает с каждым. Если прошло меньше 4 часов — примите сейчас. Иначе — пропустите и продолжите по графику. Не удваивайте дозу. Принять сейчас?",
-      timestamp: new Date().toISOString(),
-      suggested_actions: [{ label: "Принял", action: "log_taken" }],
-    },
-    en: {
-      id: 0,
-      role: "assistant",
-      content:
-        "It's okay — it happens to everyone. If less than 4 hours late, take it now. Otherwise skip and continue on schedule. Don't double up. Took it now?",
-      timestamp: new Date().toISOString(),
-      suggested_actions: [{ label: "Took it now", action: "log_taken" }],
-    },
-  },
-  feel_bad: {
-    uz: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Sizni eshitaman, va bu his-tuyg'ular juda muhim. Davolanish — qiyin yo'l, lekin siz yolg'iz emassiz. Oilangiz va shifokoringiz yonimda. Hozir nima haqda gaplashishni xohlaysiz?",
-      timestamp: new Date().toISOString(),
-      risk_flag: true,
-    },
-    ru: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Я слышу вас, ваши чувства важны. Лечение — непростой путь, но вы не одни. Семья и врач рядом. О чём хотите поговорить?",
-      timestamp: new Date().toISOString(),
-      risk_flag: true,
-    },
-    en: {
-      id: 0,
-      role: "assistant",
-      content:
-        "I hear you. Your feelings matter. Treatment is a hard road, but you're not alone — your family and doctor are here. What's on your mind?",
-      timestamp: new Date().toISOString(),
-      risk_flag: true,
-    },
-  },
-  question: {
-    uz: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Albatta! Qaysi dori haqida bilmoqchisiz? Изониазид yoki Рифампицин-mi? Men yon ta'sirlar, qabul qilish vaqti va saqlash haqida tushuntirib bera olaman.",
-      timestamp: new Date().toISOString(),
-    },
-    ru: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Конечно! О каком препарате — Изониазид или Рифампицин? Расскажу о побочных, времени приёма и хранении.",
-      timestamp: new Date().toISOString(),
-    },
-    en: {
-      id: 0,
-      role: "assistant",
-      content: "Sure! Which one — Isoniazid or Rifampicin? I can explain side effects, timing, and storage.",
-      timestamp: new Date().toISOString(),
-    },
-  },
-  stop: {
-    uz: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Sizni tushunaman. Davolanishni to'xtatish katta qaror — keling birga gaplashaylik. Avval — nima sizni shunday his qilishga olib keldi? Yon ta'sirmi, charchoqmi, yoki boshqa narsami? Sizni eshitishga tayyorman.",
-      timestamp: new Date().toISOString(),
-      risk_flag: true,
-      suggested_actions: [{ label: "Shifokor bilan bog'lanish", action: "contact_doctor" }],
-    },
-    ru: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Понимаю. Это серьёзное решение — давайте поговорим. Что вас к этому привело: побочные, усталость или что-то другое? Я слушаю.",
-      timestamp: new Date().toISOString(),
-      risk_flag: true,
-      suggested_actions: [{ label: "Связаться с врачом", action: "contact_doctor" }],
-    },
-    en: {
-      id: 0,
-      role: "assistant",
-      content:
-        "I hear you. Stopping treatment is a big decision — let's talk. What brought you to this — side effects, fatigue, or something else? I'm listening.",
-      timestamp: new Date().toISOString(),
-      risk_flag: true,
-      suggested_actions: [{ label: "Contact my doctor", action: "contact_doctor" }],
-    },
-  },
-  default: {
-    uz: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Sizni tushundim. Bu haqda ko'proq aytib bera olasizmi? Men sizning his-tuyg'ularingizga e'tibor berishni va aniq yordam taklif qilishni xohlayman.",
-      timestamp: new Date().toISOString(),
-    },
-    ru: {
-      id: 0,
-      role: "assistant",
-      content:
-        "Понял. Расскажете подробнее? Хочу учесть ваши чувства и предложить конкретную помощь.",
-      timestamp: new Date().toISOString(),
-    },
-    en: {
-      id: 0,
-      role: "assistant",
-      content:
-        "I understand. Could you tell me a bit more? I want to honor your feelings and offer real help.",
-      timestamp: new Date().toISOString(),
-    },
-  },
-}
-
-function classify(text: string): keyof typeof MOCK_RESPONSES {
-  const t = text.toLowerCase()
-  if (/(yon ta'sir|побоч|side effect|nausea|headache)/i.test(t)) return "side_effect"
-  if (/(unutdim|забыл|forgot|miss)/i.test(t)) return "forgot"
-  if (/(yomon|charcha|tired|болею|плохо|sick|sad|depress|устал)/i.test(t)) return "feel_bad"
-  if (/(to'xtat|прекрат|stop|quit)/i.test(t)) return "stop"
-  if (/(dori|лекарств|med|drug|preparat)/i.test(t)) return "question"
-  return "default"
-}
-
 export function ChatView() {
-  const { t, locale } = useI18n()
-  const [messages, setMessages] = useState<ChatMessage[]>(MOCK_CHAT_HISTORY)
+  const { t } = useI18n()
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [typing, setTyping] = useState(false)
   const [showJump, setShowJump] = useState(false)
@@ -215,6 +31,47 @@ export function ChatView() {
     ],
     [t],
   )
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadHistory() {
+      try {
+        const history = await api.chatHistory(50)
+        if (cancelled) return
+        setMessages(
+          history.length
+            ? history.map((item, index) => ({
+                id: index + 1,
+                role: item.role,
+                content: item.content.replace(/^__checkin__.*$/g, t("dashboard.moodThanks")),
+                timestamp: item.timestamp,
+              }))
+            : [
+                {
+                  id: 1,
+                  role: "assistant",
+                  content: t("chat.welcome"),
+                  timestamp: new Date().toISOString(),
+                },
+              ],
+        )
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Chat yuklanmadi")
+        setMessages([
+          {
+            id: 1,
+            role: "assistant",
+            content: t("chat.welcome"),
+            timestamp: new Date().toISOString(),
+          },
+        ])
+      }
+    }
+    loadHistory()
+    return () => {
+      cancelled = true
+    }
+  }, [t])
 
   function scrollToBottom(smooth = true) {
     endRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" })
@@ -236,28 +93,50 @@ export function ChatView() {
   }
 
   async function send(content: string) {
-    if (!content.trim()) return
+    if (!content.trim() || typing) return
+    const text = content.trim()
     const userMsg: ChatMessage = {
       id: Date.now(),
       role: "user",
-      content: content.trim(),
+      content: text,
       timestamp: new Date().toISOString(),
     }
     setMessages((m) => [...m, userMsg])
     setInput("")
     setTyping(true)
-    await new Promise((r) => setTimeout(r, 1100 + Math.random() * 600))
-
-    const key = classify(content)
-    const tmpl = MOCK_RESPONSES[key][locale] ?? MOCK_RESPONSES[key].uz
-    const reply: ChatMessage = { ...tmpl, id: Date.now() + 1, timestamp: new Date().toISOString() }
-    setMessages((m) => [...m, reply])
-    setTyping(false)
+    try {
+      const response = await api.chat(text)
+      const reply: ChatMessage = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: response.reply,
+        timestamp: new Date().toISOString(),
+        risk_flag: response.risk_flag,
+        requires_urgent_help: response.requires_urgent_help,
+        dialogue_reason: response.dialogue_reason,
+        rescue_plan: response.rescue_plan,
+        suggested_actions: response.suggested_actions.map((label) => ({ label, action: label })),
+      }
+      setMessages((m) => [...m, reply])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "AI javob bermadi"
+      toast.error(message)
+      setMessages((m) => [
+        ...m,
+        {
+          id: Date.now() + 2,
+          role: "assistant",
+          content: message,
+          timestamp: new Date().toISOString(),
+        },
+      ])
+    } finally {
+      setTyping(false)
+    }
   }
 
   return (
     <div className="mx-auto flex h-[calc(100svh-4rem-4rem)] w-full max-w-3xl flex-col px-0 sm:h-[calc(100svh-4rem-4rem)] sm:px-4 lg:h-[calc(100svh-4rem)]">
-      {/* Header */}
       <div className="flex items-center gap-3 border-b border-border/60 bg-card px-4 py-3 sm:mt-4 sm:rounded-t-3xl sm:border sm:border-border/60">
         <Avatar className="size-10 ring-2 ring-primary/20">
           <AvatarFallback className="bg-primary text-primary-foreground">
@@ -286,21 +165,15 @@ export function ChatView() {
         </div>
       </div>
 
-      {/* Messages */}
-      <div
-        ref={scrollRef}
-        onScroll={onScroll}
-        className="relative flex-1 overflow-y-auto bg-muted/30 px-4 py-5 sm:border-x sm:border-border/60"
-      >
+      <div ref={scrollRef} onScroll={onScroll} className="relative flex-1 overflow-y-auto bg-muted/30 px-4 py-5 sm:border-x sm:border-border/60">
         <ul className="space-y-4">
           {messages.map((msg, i) => (
-            <MessageBubble key={msg.id} msg={msg} prev={messages[i - 1]} onAction={(a) => {
-              if (a === "log_taken") {
-                send(locale === "uz" ? "Ichdim, rahmat" : locale === "ru" ? "Принял, спасибо" : "Took it, thanks")
-              } else {
-                send(locale === "uz" ? "Shifokorga aytaman" : locale === "ru" ? "Свяжусь с врачом" : "I'll contact my doctor")
-              }
-            }} />
+            <MessageBubble
+              key={msg.id}
+              msg={msg}
+              prev={messages[i - 1]}
+              onAction={(action) => send(action)}
+            />
           ))}
           {typing && <TypingBubble />}
         </ul>
@@ -317,7 +190,6 @@ export function ChatView() {
         )}
       </div>
 
-      {/* Quick replies */}
       <div className="flex gap-2 overflow-x-auto bg-card px-4 py-2 sm:border-x sm:border-border/60">
         {quickReplies.map((q) => (
           <button
@@ -331,7 +203,6 @@ export function ChatView() {
         ))}
       </div>
 
-      {/* Input */}
       <div className="border-t border-border/60 bg-card px-4 py-3 sm:rounded-b-3xl sm:border sm:border-border/60">
         <form
           onSubmit={(e) => {
@@ -363,13 +234,7 @@ export function ChatView() {
             rows={1}
             className="flex max-h-32 min-h-10 flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-sm leading-relaxed text-foreground outline-none transition-colors focus:border-primary"
           />
-          <Button
-            type="submit"
-            size="icon"
-            className="size-10 shrink-0 rounded-full"
-            disabled={!input.trim() || typing}
-            aria-label="Send"
-          >
+          <Button type="submit" size="icon" className="size-10 shrink-0 rounded-full" disabled={!input.trim() || typing} aria-label="Send">
             <Send className="size-4" />
           </Button>
         </form>
@@ -390,10 +255,7 @@ function MessageBubble({
 }) {
   const isUser = msg.role === "user"
   const showAvatar = !prev || prev.role !== msg.role
-  const time = new Date(msg.timestamp).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  const time = new Date(msg.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
 
   return (
     <li className={cn("flex w-full gap-2", isUser ? "justify-end" : "justify-start")}>
@@ -409,38 +271,106 @@ function MessageBubble({
         </div>
       )}
       <div className={cn("max-w-[80%]", isUser ? "items-end" : "items-start")}>
-        <div
-          className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
-            isUser
-              ? "rounded-br-md bg-primary text-primary-foreground"
-              : "rounded-bl-md border border-border/60 bg-card text-foreground",
+        <div className={cn("rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm", isUser ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/60 bg-card text-foreground")}>
+          {msg.dialogue_reason && !isUser && (
+            <Badge variant="secondary" className="mb-2">
+              {reasonLabel(msg.dialogue_reason)}
+            </Badge>
           )}
-        >
           {msg.content}
         </div>
+        {!isUser && msg.rescue_plan && <RescuePlanCard plan={msg.rescue_plan} />}
         {msg.suggested_actions && msg.suggested_actions.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {msg.suggested_actions.map((a, i) => (
-              <Button
-                key={i}
-                size="sm"
-                variant="outline"
-                onClick={() => onAction(a.action)}
-                className="rounded-full"
-              >
+              <Button key={i} size="sm" variant="outline" onClick={() => onAction(a.action)} className="rounded-full">
                 {a.label}
               </Button>
             ))}
           </div>
         )}
-        {msg.risk_flag && <CrisisCard />}
-        <p className={cn("mt-1 text-[11px] text-muted-foreground", isUser ? "text-right" : "text-left")}>
-          {time}
-        </p>
+        {(msg.requires_urgent_help || msg.rescue_plan?.escalation === "emergency") && <CrisisCard />}
+        <p className={cn("mt-1 text-[11px] text-muted-foreground", isUser ? "text-right" : "text-left")}>{time}</p>
       </div>
     </li>
   )
+}
+
+function reasonLabel(reason: NonNullable<ChatMessage["dialogue_reason"]>) {
+  const labels = {
+    side_effect: "Sabab: yon ta'sir",
+    fatigue: "Sabab: charchoq",
+    money: "Sabab: pul masalasi",
+    depression: "Sabab: tushkunlik",
+    stigma: "Sabab: maxfiylik",
+    asymptomatic: "Sabab: foydasini sezmaslik",
+    forgetfulness: "Sabab: unutish",
+    confusion: "Sabab: dori chalkashuvi",
+    family_support: "Sabab: qo'llov yetishmasligi",
+    unknown: "Sababni aniqlash",
+  }
+  return labels[reason as keyof typeof labels] ?? "Sabab aniqlangan"
+}
+
+function RescuePlanCard({ plan }: { plan: NonNullable<ChatMessage["rescue_plan"]> }) {
+  const escalation = escalationLabel(plan.escalation)
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
+      <div className="flex items-start gap-3 border-b border-border/50 px-4 py-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+          <BrainCircuit className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">{plan.title}</p>
+            <Badge variant="outline" className="rounded-full bg-background/60 text-[11px]">
+              {Math.round(plan.confidence)}% signal
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{plan.why_it_matters}</p>
+        </div>
+      </div>
+      <div className="space-y-3 px-4 py-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 ta mikro-qadam</p>
+          <ul className="mt-2 space-y-2">
+            {plan.micro_steps.slice(0, 3).map((step, index) => (
+              <li key={index} className="flex gap-2 text-xs leading-relaxed text-foreground">
+                <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <Users className="size-3.5 text-primary" />
+              Family task
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{plan.family_task}</p>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <Stethoscope className="size-3.5 text-primary" />
+              Care-team signal
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{plan.doctor_note}</p>
+          </div>
+        </div>
+        <Badge variant={escalation.variant} className="rounded-full">
+          {escalation.label}
+        </Badge>
+      </div>
+    </div>
+  )
+}
+
+function escalationLabel(escalation: string): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+  if (escalation === "emergency") return { label: "Darhol yordam kerak", variant: "destructive" }
+  if (escalation === "doctor") return { label: "Shifokor follow-up kerak", variant: "default" }
+  if (escalation === "family") return { label: "Oilaviy nudge yetarli", variant: "secondary" }
+  return { label: "Kuzatish rejimi", variant: "outline" }
 }
 
 function TypingBubble() {

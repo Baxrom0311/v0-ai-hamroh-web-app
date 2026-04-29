@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useT } from "@/lib/i18n/provider"
 import { useAuth } from "@/lib/auth/provider"
+import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -33,7 +34,7 @@ type Tab = "profile" | "language" | "telegram" | "reminders" | "security" | "abo
 
 export function SettingsView() {
   const { t, locale, setLocale } = useT()
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const [tab, setTab] = useState<Tab>("profile")
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -99,7 +100,7 @@ export function SettingsView() {
               <LanguagePanel locale={locale} onChange={setLocale} />
             </TabsContent>
             <TabsContent value="telegram" className="m-0">
-              <TelegramPanel />
+              <TelegramPanel connected={!!user?.telegram_id} onLinked={refreshUser} />
             </TabsContent>
             <TabsContent value="reminders" className="m-0">
               <RemindersPanel />
@@ -231,18 +232,40 @@ function LanguagePanel({ locale, onChange }: { locale: Locale; onChange: (l: Loc
   )
 }
 
-function TelegramPanel() {
+function TelegramPanel({ connected: connectedFromUser, onLinked }: { connected: boolean; onLinked: () => Promise<unknown> }) {
   const { t } = useT()
-  const [connected, setConnected] = useState(false)
+  const [connected, setConnected] = useState(connectedFromUser)
   const [connecting, setConnecting] = useState(false)
   const [code, setCode] = useState<string | null>(null)
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
+  const [botUsername, setBotUsername] = useState("AIHamrohBot")
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setConnected(connectedFromUser)
+  }, [connectedFromUser])
+
+  useEffect(() => {
+    api.appConfig().then((config) => {
+      if (config.telegram_bot_username) setBotUsername(config.telegram_bot_username.replace(/^@/, ""))
+    }).catch(() => {
+      // Public config is optional for this panel.
+    })
+  }, [])
 
   const handleConnect = async () => {
     setConnecting(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setCode("HMR-7842")
-    setConnecting(false)
+    setError(null)
+    try {
+      const response = await api.telegramLinkCode()
+      setCode(response.code)
+      setExpiresAt(response.expires_at)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Telegram kod olinmadi")
+    } finally {
+      setConnecting(false)
+    }
   }
 
   const copyCode = () => {
@@ -263,7 +286,8 @@ function TelegramPanel() {
             <Send className="size-6" />
           </div>
           <div className="flex-1">
-            <p className="font-medium">@AIHamrohBot</p>
+            <p className="font-medium">@{botUsername}</p>
+            <p className="text-xs text-muted-foreground">/start {code ?? "CODE"}</p>
             <Badge
               variant="secondary"
               className={cn(
@@ -301,15 +325,30 @@ function TelegramPanel() {
                 {copied ? <Check className="size-5 text-primary" /> : <Copy className="size-5" />}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">{t("settings.telegramExpires")}: 09:55</p>
+            <p className="text-xs text-muted-foreground">
+              {t("settings.telegramExpires")}: {expiresAt ? `${minutesLeft(expiresAt)} min` : "10 min"}
+            </p>
+            <Button asChild size="sm" className="w-full rounded-xl">
+              <a href={`https://t.me/${botUsername}?start=${encodeURIComponent(code)}`} target="_blank" rel="noreferrer">
+                @{botUsername} ni ochish
+              </a>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setConnected(true)}
+              onClick={async () => {
+                await onLinked()
+              }}
               className="w-full rounded-xl text-muted-foreground"
             >
-              {t("settings.telegramSimulate")}
+              Bog'lanishni tekshirish
             </Button>
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
           </div>
         )}
 
@@ -340,6 +379,11 @@ function TelegramPanel() {
       </CardContent>
     </Card>
   )
+}
+
+function minutesLeft(expiresAt: string) {
+  const diff = new Date(expiresAt).getTime() - Date.now()
+  return Math.max(0, Math.ceil(diff / 60000))
 }
 
 function RemindersPanel() {

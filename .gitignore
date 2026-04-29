@@ -6,6 +6,7 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 next.user-config.*
+!next.user-config.mjs
 
 # Environment variables
 .env*.local
@@ -13,4 +14,5 @@ next.user-config.*
 # Common ignores
 node_modules
 .next/
+tsconfig.tsbuildinfo
 .DS_Store

@@ -1,35 +1,50 @@
-# v0-ai-hamroh-web-app
+# AI Hamroh Frontend
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+Next.js frontend for the AI Hamroh MVP. It connects to the FastAPI backend on port `8000`.
 
-## Built with v0
+## Run Locally
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
-
-[Continue working on v0 →](https://v0.app/chat/projects/prj_aDlwh79Fwf5PanWvXlv2lXUdC4L1)
-
-## Getting Started
-
-First, run the development server:
+From the project root, start the backend:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+./run_demo.sh
+```
+
+Then start the frontend:
+
+```bash
+cd frontend
+pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-## Learn More
+Create `.env.local` from `.env.example`:
 
-To learn more, take a look at the following resources:
+```bash
+cp .env.example .env.local
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+Default value:
 
-<a href="https://v0.app/chat/api/kiro/clone/Baxrom0311/v0-ai-hamroh-web-app" alt="Open in Kiro"><img src="https://pdgvvgmkdvyeydso.public.blob.vercel-storage.com/open%20in%20kiro.svg?sanitize=true" /></a>
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Demo Accounts
+
+```text
+Patient: +998901111111 / demo1234
+Family:  +998902222222 / demo1234
+Doctor:  +998903333333 / demo1234
+```
+
+## Checks
+
+```bash
+pnpm lint
+pnpm build
+```
