@@ -5,10 +5,12 @@ import { toast } from "sonner"
 import { useT } from "@/lib/i18n/provider"
 import { useAuth } from "@/lib/auth/provider"
 import { api } from "@/lib/api"
+import type { ClinicalProfile } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -29,18 +31,21 @@ import {
   ChevronRight,
   LogOut,
   AlertTriangle,
+  Activity,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Tab = "profile" | "language" | "telegram" | "reminders" | "privacy" | "security" | "about"
+type Tab = "profile" | "clinical" | "language" | "telegram" | "reminders" | "privacy" | "security" | "about"
 
 export function SettingsView() {
   const { t, locale, setLocale } = useT()
   const { user, logout, refreshUser } = useAuth()
   const [tab, setTab] = useState<Tab>("profile")
 
+  const showClinical = user?.role === "patient"
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "profile", label: t("settings.tabProfile"), icon: <User className="size-4" /> },
+    ...(showClinical ? [{ id: "clinical" as const, label: "Klinik profil", icon: <Activity className="size-4" /> }] : []),
     { id: "language", label: t("settings.tabLanguage"), icon: <Globe className="size-4" /> },
     { id: "telegram", label: t("settings.tabTelegram"), icon: <Send className="size-4" /> },
     { id: "reminders", label: t("settings.tabReminders"), icon: <Bell className="size-4" /> },
@@ -99,6 +104,11 @@ export function SettingsView() {
             <TabsContent value="profile" className="m-0">
               <ProfilePanel name={user?.full_name || "Demo User"} phone={user?.phone || "+998 90 111 11 11"} />
             </TabsContent>
+            {showClinical && (
+              <TabsContent value="clinical" className="m-0">
+                <ClinicalProfilePanel />
+              </TabsContent>
+            )}
             <TabsContent value="language" className="m-0">
               <LanguagePanel locale={locale} onChange={setLocale} />
             </TabsContent>
@@ -183,6 +193,225 @@ function ProfilePanel({ name, phone }: { name: string; phone: string }) {
       </CardContent>
     </Card>
   )
+}
+
+function ClinicalProfilePanel() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [conditionsText, setConditionsText] = useState("")
+  const [allergiesText, setAllergiesText] = useState("")
+  const [kidneyDisease, setKidneyDisease] = useState(false)
+  const [liverDisease, setLiverDisease] = useState(false)
+  const [pregnancyStatus, setPregnancyStatus] = useState("unknown")
+  const [alcoholUse, setAlcoholUse] = useState("unknown")
+  const [weightText, setWeightText] = useState("")
+  const [notes, setNotes] = useState("")
+
+  useEffect(() => {
+    let cancelled = false
+    api.clinicalProfile()
+      .then((profile) => {
+        if (cancelled) return
+        hydrateClinicalProfile(profile)
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(err instanceof Error ? err.message : "Klinik profil yuklanmadi")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function hydrateClinicalProfile(profile: ClinicalProfile) {
+    setConditionsText(profile.conditions.join(", "))
+    setAllergiesText(profile.allergies.join(", "))
+    setKidneyDisease(profile.kidney_disease)
+    setLiverDisease(profile.liver_disease)
+    setPregnancyStatus(profile.pregnancy_status || "unknown")
+    setAlcoholUse(profile.alcohol_use || "unknown")
+    setWeightText(profile.weight_kg ? String(profile.weight_kg) : "")
+    setNotes(profile.notes || "")
+  }
+
+  async function saveClinicalProfile() {
+    setSaving(true)
+    try {
+      const profile = await api.updateClinicalProfile({
+        conditions: splitClinicalList(conditionsText),
+        allergies: splitClinicalList(allergiesText),
+        kidney_disease: kidneyDisease,
+        liver_disease: liverDisease,
+        pregnancy_status: pregnancyStatus,
+        alcohol_use: alcoholUse,
+        weight_kg: weightText.trim() ? Number(weightText) : null,
+        notes: notes.trim() || null,
+      })
+      hydrateClinicalProfile(profile)
+      toast.success("Klinik profil saqlandi, safety signallar yangilandi")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Klinik profil saqlanmadi")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl border-border/60">
+      <CardHeader>
+        <CardTitle className="text-lg">Klinik profil</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+          <p className="font-semibold text-foreground">AI safety context</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Bu ma'lumotlar dori-dori reaksiyasi, doza xavfi, jigar/buyrak, homiladorlik va allergiya signallarini aniqroq baholash uchun ishlatiladi.
+          </p>
+        </div>
+
+        <FieldGroup>
+          <Field>
+            <FieldLabel>Kasalliklar yoki holatlar</FieldLabel>
+            <Input
+              value={conditionsText}
+              onChange={(event) => setConditionsText(event.target.value)}
+              disabled={loading || saving}
+              placeholder="TB, diabet, qon bosimi"
+              className="h-12 rounded-xl"
+            />
+            <FieldDescription>Vergul bilan ajrating. Masalan: TB, diabet, gipertoniya.</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel>Allergiyalar</FieldLabel>
+            <Input
+              value={allergiesText}
+              onChange={(event) => setAllergiesText(event.target.value)}
+              disabled={loading || saving}
+              placeholder="penicillin, aspirin"
+              className="h-12 rounded-xl"
+            />
+            <FieldDescription>Dori allergiyalari AI safety flaglarda urgent signal bo'ladi.</FieldDescription>
+          </Field>
+        </FieldGroup>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ToggleCard
+            title="Buyrak muammosi"
+            desc="NSAID/metformin kabi dorilarda safety flag kuchayadi."
+            checked={kidneyDisease}
+            disabled={loading || saving}
+            onCheckedChange={setKidneyDisease}
+          />
+          <ToggleCard
+            title="Jigar muammosi"
+            desc="TB dorilari va paratsetamol uchun monitoring signali kuchayadi."
+            checked={liverDisease}
+            disabled={loading || saving}
+            onCheckedChange={setLiverDisease}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field>
+            <FieldLabel>Homiladorlik holati</FieldLabel>
+            <Select value={pregnancyStatus} disabled={loading || saving} onValueChange={setPregnancyStatus}>
+              <SelectTrigger className="h-12 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_applicable">Tegishli emas</SelectItem>
+                <SelectItem value="not_pregnant">Homilador emas</SelectItem>
+                <SelectItem value="pregnant">Homilador</SelectItem>
+                <SelectItem value="planning">Rejalashtiryapti</SelectItem>
+                <SelectItem value="unknown">Noma'lum</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel>Spirtli ichimlik</FieldLabel>
+            <Select value={alcoholUse} disabled={loading || saving} onValueChange={setAlcoholUse}>
+              <SelectTrigger className="h-12 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Yo'q</SelectItem>
+                <SelectItem value="rare">Kamdan-kam</SelectItem>
+                <SelectItem value="weekly">Haftalik</SelectItem>
+                <SelectItem value="daily">Har kuni</SelectItem>
+                <SelectItem value="unknown">Noma'lum</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel>Vazn (kg)</FieldLabel>
+            <Input
+              type="number"
+              min="1"
+              max="350"
+              value={weightText}
+              onChange={(event) => setWeightText(event.target.value)}
+              disabled={loading || saving}
+              placeholder="70"
+              className="h-12 rounded-xl"
+            />
+          </Field>
+        </div>
+
+        <Field>
+          <FieldLabel>Qo'shimcha eslatma</FieldLabel>
+          <Textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            disabled={loading || saving}
+            placeholder="Masalan: oldin doridan toshma bo'lgan, shifokor jigar analizini aytgan..."
+            className="min-h-28 rounded-xl"
+          />
+        </Field>
+
+        <div className="flex justify-end">
+          <Button className="rounded-xl" disabled={loading || saving} onClick={saveClinicalProfile}>
+            {saving ? "Saqlanmoqda..." : "Klinik profilni saqlash"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ToggleCard({
+  title,
+  desc,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  title: string
+  desc: string
+  checked: boolean
+  disabled?: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-foreground">{title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{desc}</p>
+        </div>
+        <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+      </div>
+    </div>
+  )
+}
+
+function splitClinicalList(value: string) {
+  return value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 30)
 }
 
 function LanguagePanel({ locale, onChange }: { locale: Locale; onChange: (l: Locale) => void }) {

@@ -54,7 +54,14 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                  navigator.serviceWorker.getRegistrations()
+                    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+                    .catch(() => {});
+                  if ('caches' in window) {
+                    caches.keys()
+                      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('noskipai-')).map((key) => caches.delete(key))))
+                      .catch(() => {});
+                  }
                 });
               }
             `,

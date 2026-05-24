@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { useT } from "@/lib/i18n/provider"
-import { api, type ApiMedication, type PillBottleAuditResult } from "@/lib/api"
+import { api, type ApiMedication, type DrugKnowledge, type PillBottleAuditResult } from "@/lib/api"
 import { fileToBase64 } from "@/lib/image-file"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Pill, Plus, Pencil, Trash2, Clock, Camera, Loader2, ScanSearch } from "lucide-react"
+import { Camera, Clock, ExternalLink, Loader2, Pencil, Pill, Plus, ScanSearch, ShieldAlert, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function MedicationsList() {
@@ -29,7 +29,9 @@ export function MedicationsList() {
   const [archived, setArchived] = useState<ApiMedication[]>([])
   const [toDelete, setToDelete] = useState<ApiMedication | null>(null)
   const [audits, setAudits] = useState<Record<number, PillBottleAuditResult>>({})
+  const [drugKnowledge, setDrugKnowledge] = useState<Record<number, DrugKnowledge>>({})
   const [auditingId, setAuditingId] = useState<number | null>(null)
+  const [knowledgeLoadingId, setKnowledgeLoadingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,8 +69,6 @@ export function MedicationsList() {
     }
   }
 
-  const active = meds.filter((m) => m.is_active)
-
   async function handleAudit(med: ApiMedication, file: File) {
     const rawCount = window.prompt("Boshlang'ich tablet soni nechta edi?", "30")
     if (rawCount === null) return
@@ -93,6 +93,35 @@ export function MedicationsList() {
       setAuditingId(null)
     }
   }
+
+  async function handleDrugKnowledge(med: ApiMedication) {
+    setKnowledgeLoadingId(med.id)
+    try {
+      const result = await api.medicationDrugKnowledge(med.id)
+      setDrugKnowledge((prev) => ({ ...prev, [med.id]: result }))
+      setMeds((prev) =>
+        prev.map((item) =>
+          item.id === med.id
+            ? {
+                ...item,
+                rxcui: result.rxcui,
+                rxnorm_name: result.rxnorm_name,
+                active_ingredients: result.ingredients,
+                drug_source: result.source,
+                drug_knowledge_snapshot: result as unknown as Record<string, unknown>,
+              }
+            : item,
+        ),
+      )
+      toast.success("Official dori tahlili yangilandi")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Dori tahlili olinmadi")
+    } finally {
+      setKnowledgeLoadingId(null)
+    }
+  }
+
+  const active = meds.filter((m) => m.is_active)
 
   return (
     <div className="space-y-6">
@@ -148,8 +177,11 @@ export function MedicationsList() {
               key={med.id}
               med={med}
               audit={audits[med.id]}
+              knowledge={drugKnowledge[med.id]}
               auditing={auditingId === med.id}
+              knowledgeLoading={knowledgeLoadingId === med.id}
               onAudit={handleAudit}
+              onDrugKnowledge={handleDrugKnowledge}
               onDelete={() => setToDelete(med)}
             />
           ))}
@@ -190,19 +222,27 @@ export function MedicationsList() {
 function MedCard({
   med,
   audit,
+  knowledge,
   auditing,
+  knowledgeLoading,
   onAudit,
+  onDrugKnowledge,
   onDelete,
   archived,
 }: {
   med: ApiMedication
   audit?: PillBottleAuditResult
+  knowledge?: DrugKnowledge
   auditing?: boolean
+  knowledgeLoading?: boolean
   onAudit?: (med: ApiMedication, file: File) => void
+  onDrugKnowledge?: (med: ApiMedication) => void
   onDelete?: () => void
   archived?: boolean
 }) {
   const { t } = useT()
+  const ingredients = (med.active_ingredients ?? []).map((item) => item.name).filter((name): name is string => Boolean(name))
+
   return (
     <Card className={cn("rounded-2xl border-border/60 transition-shadow hover:shadow-sm", archived && "bg-muted/30")}>
       <CardContent className="space-y-4 p-5">
@@ -258,11 +298,43 @@ function MedCard({
 
         {med.instructions && <p className="line-clamp-2 text-xs text-muted-foreground">{med.instructions}</p>}
 
+        {(med.rxnorm_name || ingredients.length > 0) && (
+          <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <ScanSearch className="size-3.5 text-primary" />
+              <span className="font-medium text-foreground">
+                {ingredients.length > 0 ? `Faol modda: ${ingredients.slice(0, 2).join(", ")}` : med.rxnorm_name}
+              </span>
+              {med.rxcui && (
+                <Badge variant="outline" className="rounded-full text-[10px]">
+                  RxNorm {med.rxcui}
+                </Badge>
+              )}
+            </div>
+            {med.drug_source && <p className="mt-1 text-muted-foreground">{med.drug_source}</p>}
+          </div>
+        )}
+
+        {!archived && onDrugKnowledge && (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 rounded-xl"
+            onClick={() => onDrugKnowledge(med)}
+            disabled={knowledgeLoading}
+          >
+            {knowledgeLoading ? <Loader2 className="size-4 animate-spin" /> : <ShieldAlert className="size-4" />}
+            Official label tahlil
+          </Button>
+        )}
+
         {!archived && onAudit && (
-          <label className={cn(
-            "flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted",
-            auditing && "pointer-events-none opacity-60",
-          )}>
+          <label
+            className={cn(
+              "flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted",
+              auditing && "pointer-events-none opacity-60",
+            )}
+          >
             {auditing ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
             Smart bottle audit
             <input
@@ -280,18 +352,136 @@ function MedCard({
         )}
 
         {audit && <PillAuditResult audit={audit} />}
+        {knowledge && <DrugKnowledgeResult knowledge={knowledge} />}
       </CardContent>
     </Card>
+  )
+}
+
+function DrugKnowledgeResult({ knowledge }: { knowledge: DrugKnowledge }) {
+  const ingredients = knowledge.ingredients.map((item) => item.name).filter((name): name is string => Boolean(name))
+  const label = knowledge.label_evidence
+  const hasLabelSignals = label.found || label.has_boxed_warning || label.has_drug_interactions || label.has_contraindications || label.has_warnings
+
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={knowledge.rxcui ? "secondary" : "outline"} className="rounded-full">
+          {knowledge.rxcui ? `RxNorm ${knowledge.rxcui}` : "RxNorm topilmadi"}
+        </Badge>
+        {hasLabelSignals && (
+          <Badge variant={label.has_boxed_warning ? "destructive" : "outline"} className="rounded-full">
+            FDA label
+          </Badge>
+        )}
+      </div>
+
+      <p className="mt-2 leading-relaxed text-foreground">{knowledge.patient_summary}</p>
+      {ingredients.length > 0 && (
+        <p className="mt-1 leading-relaxed text-muted-foreground">
+          Faol modda: <span className="font-medium text-foreground">{ingredients.join(", ")}</span>
+        </p>
+      )}
+      <DoseEstimateBadges knowledge={knowledge} className="mt-2" />
+
+      <div className="mt-3 space-y-2">
+        <KnowledgeLine label="Doza formati" value={knowledge.dose_review.message} tone={knowledge.dose_review.needs_review ? "review" : undefined} />
+        <KnowledgeLine label="Kunlik doza" value={knowledge.daily_dose_review.message} tone={knowledge.daily_dose_review.level} />
+        <KnowledgeLine label="Qabul vaqti" value={knowledge.administration_review.timing_message} />
+      </div>
+
+      {label.snippets.length > 0 && (
+        <div className="mt-3 rounded-xl border border-border/60 bg-background/70 p-2">
+          <p className="font-semibold text-foreground">Official labeldan qisqa dalil</p>
+          {label.snippets.slice(0, 2).map((snippet) => (
+            <p key={snippet.section} className="mt-1 leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">{snippet.section}:</span> {snippet.text}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {knowledge.warnings.length > 0 && (
+        <div className="mt-3 rounded-xl border border-[var(--risk-high)]/25 bg-[var(--risk-high)]/10 p-2">
+          {knowledge.warnings.slice(0, 2).map((warning) => (
+            <p key={warning} className="leading-relaxed text-muted-foreground">
+              {warning}
+            </p>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {knowledge.official_sources.slice(0, 2).map((source) => (
+          <a
+            key={`${source.name}-${source.url}`}
+            href={source.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:border-primary/40"
+          >
+            {source.name}
+            <ExternalLink className="size-3" />
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DoseEstimateBadges({ knowledge, className }: { knowledge: DrugKnowledge; className?: string }) {
+  const singleDose = knowledge.dose_review.estimated_single_dose_amount_mg
+  const dailyDose = knowledge.daily_dose_review.estimated_daily_amount_mg
+  if (singleDose == null && dailyDose == null) return null
+
+  return (
+    <div className={cn("flex flex-wrap gap-1.5", className)}>
+      {singleDose != null && (
+        <Badge variant="outline" className="rounded-full bg-background/70">
+          1 qabul: {formatMg(singleDose)}
+        </Badge>
+      )}
+      {knowledge.dose_review.dose_count != null && (
+        <Badge variant="outline" className="rounded-full bg-background/70">
+          Soni: {Number(knowledge.dose_review.dose_count.toFixed(2)).toLocaleString("uz-UZ")} dona
+        </Badge>
+      )}
+      {dailyDose != null && (
+        <Badge variant={knowledge.daily_dose_review.level === "caution" ? "destructive" : "secondary"} className="rounded-full">
+          Kuniga: {formatMg(dailyDose)}
+        </Badge>
+      )}
+    </div>
+  )
+}
+
+function formatMg(value: number) {
+  return `${Number(value.toFixed(4)).toLocaleString("uz-UZ")}mg`
+}
+
+function KnowledgeLine({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border bg-background/70 p-2",
+        tone === "caution" ? "border-[var(--risk-high)]/30" : tone === "review" ? "border-amber-300/50" : "border-border/60",
+      )}
+    >
+      <p className="font-semibold text-foreground">{label}</p>
+      <p className="mt-1 leading-relaxed text-muted-foreground">{value}</p>
+    </div>
   )
 }
 
 function PillAuditResult({ audit }: { audit: PillBottleAuditResult }) {
   const badge = auditBadge(audit.signal)
   return (
-    <div className={cn(
-      "rounded-2xl border p-3 text-xs",
-      audit.risk_flag ? "border-[var(--risk-high)]/30 bg-[var(--risk-high)]/10" : "border-primary/20 bg-primary/5",
-    )}>
+    <div
+      className={cn(
+        "rounded-2xl border p-3 text-xs",
+        audit.risk_flag ? "border-[var(--risk-high)]/30 bg-[var(--risk-high)]/10" : "border-primary/20 bg-primary/5",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={badge.variant} className="rounded-full">
           <ScanSearch className="size-3" />
