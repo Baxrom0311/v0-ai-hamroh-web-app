@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useT } from "@/lib/i18n/provider"
-import { api, type ClinicalSafetySignal, type DoctorPatientRow, type DoctorSafetySignalRow, type SoapNote } from "@/lib/api"
+import { api, type ClinicalSafetySignal, type DoctorPatientRow, type DoctorReviewAction, type DoctorSafetySignalRow, type SoapNote } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { RiskIndicator } from "@/components/shared/risk-indicator"
 import { Sparkline } from "@/components/shared/sparkline"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Users, AlertTriangle, TrendingUp, CheckCircle2, ChevronRight, Stethoscope } from "lucide-react"
+import { Search, Users, AlertTriangle, TrendingUp, CheckCircle2, ChevronRight, Stethoscope, ChevronLeft, X, Edit, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { RiskLevel } from "@/lib/types"
 
@@ -36,9 +36,12 @@ export function DoctorDashboard() {
   const [filter, setFilter] = useState<Filter>("all")
   const [rows, setRows] = useState<DoctorPatientRow[]>([])
   const [signalRows, setSignalRows] = useState<DoctorSafetySignalRow[]>([])
+  const [inboxTotal, setInboxTotal] = useState(0)
+  const [inboxOffset, setInboxOffset] = useState(0)
+  const inboxLimit = 6
   const [soapByPatient, setSoapByPatient] = useState<Record<number, SoapNote>>({})
   const [soapLoadingId, setSoapLoadingId] = useState<number | null>(null)
-  const [resolvingSignalId, setResolvingSignalId] = useState<number | null>(null)
+  const [reviewingSignalId, setReviewingSignalId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,13 +49,14 @@ export function DoctorDashboard() {
     setLoading(true)
     setError(null)
     try {
-      const [patientsData, signalsData] = await Promise.all([
+      const [patientsData, inboxData] = await Promise.all([
         api.doctorPatients(),
-        api.doctorSafetySignals("active", 30).catch(() => []),
+        api.doctorInbox(inboxLimit, inboxOffset).catch(() => ({ data: [], pagination: { total: 0, limit: inboxLimit, offset: 0 } })),
       ])
       if (cancelled?.()) return
       setRows(patientsData)
-      setSignalRows(signalsData)
+      setSignalRows(inboxData.data)
+      setInboxTotal(inboxData.pagination.total)
     } catch (err) {
       if (!cancelled?.()) setError(err instanceof Error ? err.message : "Doctor dashboard yuklanmadi")
     } finally {
@@ -66,7 +70,8 @@ export function DoctorDashboard() {
     return () => {
       cancelled = true
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inboxOffset])
 
   const allPatients = useMemo(() => rows.map(mapPatient), [rows])
 
@@ -100,18 +105,19 @@ export function DoctorDashboard() {
     }
   }
 
-  async function resolveSignal(signalId: number) {
-    setResolvingSignalId(signalId)
+  async function reviewSignal(signalId: number, action: DoctorReviewAction, note?: string, modifiedAction?: string) {
+    setReviewingSignalId(signalId)
     setError(null)
     try {
-      await api.resolveDoctorSafetySignal(signalId)
+      await api.doctorReviewSignal(signalId, { action, note: note || null, modified_action: modifiedAction || null })
       setSignalRows((current) => current.filter((row) => row.signal.id !== signalId))
+      setInboxTotal((t) => Math.max(0, t - 1))
       const data = await api.doctorPatients()
       setRows(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Signal yopilmadi")
+      setError(err instanceof Error ? err.message : "Review amalga oshmadi")
     } finally {
-      setResolvingSignalId(null)
+      setReviewingSignalId(null)
     }
   }
 
@@ -144,8 +150,12 @@ export function DoctorDashboard() {
       <SafetySignalInbox
         signals={signalRows}
         loading={loading}
-        resolvingSignalId={resolvingSignalId}
-        onResolve={resolveSignal}
+        reviewingSignalId={reviewingSignalId}
+        onReview={reviewSignal}
+        total={inboxTotal}
+        offset={inboxOffset}
+        limit={inboxLimit}
+        onPageChange={setInboxOffset}
       />
 
       <Card className="rounded-2xl border-border/60">
@@ -211,68 +221,174 @@ function mapPatient(row: DoctorPatientRow): PatientView {
 function SafetySignalInbox({
   signals,
   loading,
-  resolvingSignalId,
-  onResolve,
+  reviewingSignalId,
+  onReview,
+  total,
+  offset,
+  limit,
+  onPageChange,
 }: {
   signals: DoctorSafetySignalRow[]
   loading: boolean
-  resolvingSignalId: number | null
-  onResolve: (signalId: number) => void
+  reviewingSignalId: number | null
+  onReview: (signalId: number, action: DoctorReviewAction, note?: string, modifiedAction?: string) => void
+  total: number
+  offset: number
+  limit: number
+  onPageChange: (offset: number) => void
 }) {
-  const topSignals = signals.slice(0, 6)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [modifyNote, setModifyNote] = useState("")
+  const [modifyAction, setModifyAction] = useState("")
+  const totalPages = Math.ceil(total / limit)
+  const currentPage = Math.floor(offset / limit) + 1
+
   return (
     <Card className="rounded-2xl border-border/60">
       <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
         <div>
-          <CardTitle className="text-lg">AI safety signal inbox</CardTitle>
+          <CardTitle className="text-lg">Doctor Review Inbox</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Chat, dori tahlili va adherence patternlardan kelgan active signallar.
+            Pending safety signals — confirm, dismiss, or modify before patient sees changes.
           </p>
         </div>
-        <Badge variant={topSignals.length ? "destructive" : "secondary"} className="rounded-full">
-          {topSignals.length} active
+        <Badge variant={total > 0 ? "destructive" : "secondary"} className="rounded-full">
+          {total} pending
         </Badge>
       </CardHeader>
       <CardContent className="space-y-3">
         {loading ? (
           <div className="rounded-2xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">Yuklanmoqda...</div>
-        ) : topSignals.length === 0 ? (
+        ) : signals.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-            Active safety signal yo'q.
+            Pending review signal yo&apos;q. Barcha signallar ko&apos;rib chiqilgan.
           </div>
         ) : (
-          topSignals.map((row) => (
-            <div key={row.signal.id ?? row.signal.rule_code} className="rounded-2xl border border-border/70 bg-background/70 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={signalBadgeVariant(row.signal.severity)} className="rounded-full">
-                      {row.signal.severity}
-                    </Badge>
-                    <span className="text-xs font-medium text-primary">{signalSourceLabel(row.signal.source)}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(row.signal.updated_at || row.signal.created_at || Date.now()).toLocaleString()}</span>
+          signals.map((row) => {
+            const signalId = row.signal.id as number
+            const isExpanded = expandedId === signalId
+            return (
+              <div key={signalId} className="rounded-2xl border border-border/70 bg-background/70 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={signalBadgeVariant(row.signal.severity)} className="rounded-full">
+                        {row.signal.severity}
+                      </Badge>
+                      <span className="text-xs font-medium text-primary">{signalSourceLabel(row.signal.source)}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(row.signal.updated_at || row.signal.created_at || Date.now()).toLocaleString()}</span>
+                    </div>
+                    <h3 className="mt-2 text-sm font-semibold text-foreground">{row.patient.full_name}: {row.signal.title}</h3>
+                    <SignalContextBadges signal={row.signal} />
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{row.signal.message}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">Suggested action:</span> {row.signal.action}
+                    </p>
                   </div>
-                  <h3 className="mt-2 text-sm font-semibold text-foreground">{row.patient.full_name}: {row.signal.title}</h3>
-                  <SignalContextBadges signal={row.signal} />
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{row.signal.message}</p>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    <span className="font-semibold text-foreground">Action:</span> {row.signal.action}
-                  </p>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="rounded-xl"
+                      disabled={reviewingSignalId === signalId}
+                      onClick={() => onReview(signalId, "confirm")}
+                    >
+                      <CheckCircle2 className="mr-1 size-3.5" />
+                      Confirm
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl"
+                      disabled={reviewingSignalId === signalId}
+                      onClick={() => onReview(signalId, "dismiss")}
+                    >
+                      <X className="mr-1 size-3.5" />
+                      Dismiss
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl"
+                      disabled={reviewingSignalId === signalId}
+                      onClick={() => {
+                        setExpandedId(isExpanded ? null : signalId)
+                        setModifyNote("")
+                        setModifyAction("")
+                      }}
+                    >
+                      <Edit className="mr-1 size-3.5" />
+                      Modify
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-xl"
+                      disabled={reviewingSignalId === signalId}
+                      onClick={() => onReview(signalId, "request_info")}
+                    >
+                      <HelpCircle className="mr-1 size-3.5" />
+                      Info
+                    </Button>
+                  </div>
                 </div>
-                {row.signal.id ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0 rounded-xl"
-                    disabled={resolvingSignalId === row.signal.id}
-                    onClick={() => onResolve(row.signal.id as number)}
-                  >
-                    {resolvingSignalId === row.signal.id ? "..." : "Resolve"}
-                  </Button>
-                ) : null}
+                {isExpanded && (
+                  <div className="mt-3 space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-xs font-semibold text-foreground">Modified action (majburiy):</p>
+                    <input
+                      type="text"
+                      value={modifyAction}
+                      onChange={(e) => setModifyAction(e.target.value)}
+                      placeholder="Yangi tavsiya yozing..."
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <p className="text-xs font-semibold text-foreground">Note (ixtiyoriy):</p>
+                    <input
+                      type="text"
+                      value={modifyNote}
+                      onChange={(e) => setModifyNote(e.target.value)}
+                      placeholder="Izoh..."
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <Button
+                      size="sm"
+                      className="rounded-xl"
+                      disabled={!modifyAction.trim() || reviewingSignalId === signalId}
+                      onClick={() => {
+                        onReview(signalId, "modify", modifyNote || undefined, modifyAction)
+                        setExpandedId(null)
+                      }}
+                    >
+                      Submit Modified Review
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            )
+          })
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl"
+              disabled={offset === 0}
+              onClick={() => onPageChange(Math.max(0, offset - limit))}
+            >
+              <ChevronLeft className="mr-1 size-3.5" /> Oldingi
+            </Button>
+            <span className="text-xs text-muted-foreground">{currentPage} / {totalPages}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl"
+              disabled={offset + limit >= total}
+              onClick={() => onPageChange(offset + limit)}
+            >
+              Keyingi <ChevronRight className="ml-1 size-3.5" />
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

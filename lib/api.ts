@@ -1,6 +1,6 @@
 "use client"
 
-import type { User, UserRole } from "./types"
+import type { PatientNotification, User, UserRole } from "./types"
 
 export const AUTH_TOKEN_KEY = "noskipai-token"
 
@@ -221,11 +221,22 @@ export type AdherenceLogAction = {
   message: string
 } | null
 
+export type EvidenceCard = {
+  source: string
+  title: string
+  snippet: string
+  url?: string | null
+  confidence: number
+}
+
 export type ChatReply = {
   reply: string
   risk_flag: boolean
   requires_urgent_help?: boolean
   suggested_actions: SuggestedAction[]
+  evidence_cards?: EvidenceCard[]
+  safety_level?: "safe" | "caution" | "warning" | "critical"
+  intent?: string
   dialogue_reason?: RescuePlan["root_cause"]
   rescue_plan?: RescuePlan
   escalation?: ChatEscalation
@@ -315,6 +326,37 @@ export type DoctorPatientRow = {
 export type DoctorSafetySignalRow = {
   patient: User
   signal: ClinicalSafetySignal
+}
+
+export type DoctorReviewAction = "confirm" | "dismiss" | "modify" | "request_info"
+
+export type DoctorReviewPayload = {
+  action: DoctorReviewAction
+  note?: string | null
+  modified_action?: string | null
+}
+
+export type DoctorReviewResponse = {
+  id: number
+  signal_id: number
+  doctor_id: number
+  action: string
+  note: string | null
+  modified_action: string | null
+  created_at: string
+}
+
+export type DoctorInboxResponse = {
+  data: DoctorSafetySignalRow[]
+  pagination: { total: number; limit: number; offset: number }
+}
+
+export type DoctorReviewResult = {
+  data: {
+    review: DoctorReviewResponse
+    signal: ClinicalSafetySignal
+    patient: User | null
+  }
 }
 
 export type PublicAppConfig = {
@@ -1068,6 +1110,21 @@ export const api = {
     return apiFetch<DoctorSafetySignalRow>(`/doctor/safety-signals/${signalId}/resolve`, { method: "POST" })
   },
 
+  doctorInbox(limit = 20, offset = 0) {
+    return apiFetch<DoctorInboxResponse>(`/doctor/inbox?limit=${limit}&offset=${offset}`)
+  },
+
+  doctorReviewSignal(signalId: number, payload: DoctorReviewPayload) {
+    return apiFetch<DoctorReviewResult>(`/doctor/review/${signalId}`, {
+      method: "POST",
+      body: jsonBody(payload),
+    })
+  },
+
+  doctorReviewHistory(limit = 50) {
+    return apiFetch<{ data: Array<{ review: DoctorReviewResponse; signal: ClinicalSafetySignal | null }> }>(`/doctor/reviews?limit=${limit}`)
+  },
+
   doctorSoapNote(patientId: number) {
     return apiFetch<SoapNote>(`/doctor/patient/${patientId}/soap-note`)
   },
@@ -1078,5 +1135,25 @@ export const api = {
 
   telegramLinkCode() {
     return apiFetch<TelegramLinkCode>("/users/me/telegram-link-code", { method: "POST" })
+  },
+
+  aiFeedback(payload: { message_content: string; rating: "up" | "down"; comment?: string }) {
+    return apiFetch<{ id: number; status: string }>("/ai/feedback", {
+      method: "POST",
+      body: jsonBody(payload),
+    })
+  },
+
+  notifications(unreadOnly = false) {
+    const params = unreadOnly ? "?unread_only=true" : ""
+    return apiFetch<{ notifications: PatientNotification[]; unread_count: number }>(`/users/me/notifications${params}`)
+  },
+
+  markNotificationRead(id: number) {
+    return apiFetch<{ id: number; is_read: boolean }>(`/users/me/notifications/${id}/read`, { method: "PUT" })
+  },
+
+  markAllNotificationsRead() {
+    return apiFetch<{ status: string }>("/users/me/notifications/read-all", { method: "PUT" })
   },
 }

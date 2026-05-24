@@ -170,10 +170,12 @@ export function AppShell({
           <div className="hidden flex-1 lg:block" />
           <div className="flex items-center gap-1 sm:gap-1.5">
             <LanguageSwitcher compact />
-            <Button variant="ghost" size="icon" className="relative size-9" aria-label="Notifications">
-              <Bell className="size-4" />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-[var(--risk-critical)]" />
-            </Button>
+            <Link href="/notifications">
+              <Button variant="ghost" size="icon" className="relative size-9" aria-label="Notifications">
+                <Bell className="size-4" />
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-[var(--risk-critical)]" />
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="size-9 rounded-full p-0">

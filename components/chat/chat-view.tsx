@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { AlertCircle, ArrowDown, BrainCircuit, CheckCircle2, ExternalLink, ImagePlus, Mic, Pill, Send, Sparkles, Stethoscope, Users } from "lucide-react"
+import { AlertCircle, ArrowDown, BrainCircuit, CheckCircle2, ExternalLink, ImagePlus, Mic, Pill, Send, Sparkles, Stethoscope, ThumbsDown, ThumbsUp, Users } from "lucide-react"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -135,6 +135,9 @@ export function ChatView() {
         adherence_summary: response.adherence_summary,
         adherence_log_action: response.adherence_log_action,
         adherence_log_actions: response.adherence_log_actions,
+        evidence_cards: response.evidence_cards,
+        safety_level: response.safety_level,
+        intent: response.intent,
         suggested_actions: response.suggested_actions.map((item) =>
           typeof item === "string"
             ? { label: item, action: item }
@@ -407,6 +410,7 @@ function MessageBubble({
         {!isUser && msg.drug_knowledge && <DrugKnowledgeCard knowledge={msg.drug_knowledge} />}
         {!isUser && msg.medication_intelligence && <MedicationIntelligenceCard intelligence={msg.medication_intelligence} />}
         {!isUser && msg.candidate_medication_safety && <CandidateMedicationSafetyCard review={msg.candidate_medication_safety} />}
+        {!isUser && msg.evidence_cards && msg.evidence_cards.length > 0 && <EvidenceCardsPanel cards={msg.evidence_cards} />}
         {msg.suggested_actions && msg.suggested_actions.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {msg.suggested_actions.map((a, i) => (
@@ -417,6 +421,7 @@ function MessageBubble({
           </div>
         )}
         {(msg.requires_urgent_help || msg.rescue_plan?.escalation === "emergency") && <CrisisCard />}
+        {!isUser && msg.content && <FeedbackButtons content={msg.content} />}
         <p className={cn("mt-1 text-[11px] text-muted-foreground", isUser ? "text-right" : "text-left")}>{time}</p>
       </div>
     </li>
@@ -1226,6 +1231,47 @@ function CandidateMedicationSafetyCard({
   )
 }
 
+function EvidenceCardsPanel({ cards }: { cards: NonNullable<ChatMessage["evidence_cards"]> }) {
+  const [open, setOpen] = useState(false)
+  if (!cards.length) return null
+  const confidenceColor = (c: number) => (c >= 0.8 ? "text-green-600" : c >= 0.5 ? "text-yellow-600" : "text-red-500")
+  const sourceLabel: Record<string, string> = { rxnorm: "RxNorm", openfda: "openFDA", local_rules: "Safety Rules", clinical_profile: "Clinical Profile", who: "WHO" }
+  return (
+    <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-blue-700 dark:text-blue-300"
+      >
+        <BrainCircuit className="h-3.5 w-3.5" />
+        <span>Dalillar / Источники ({cards.length})</span>
+        <span className="ml-auto text-[10px]">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="space-y-2 px-3 pb-3">
+          {cards.map((card, i) => (
+            <div key={i} className="rounded-lg border bg-card p-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px]">{sourceLabel[card.source] || card.source}</Badge>
+                <span className="font-medium">{card.title}</span>
+                <span className={cn("ml-auto text-[10px] font-semibold", confidenceColor(card.confidence))}>
+                  {Math.round(card.confidence * 100)}%
+                </span>
+              </div>
+              <p className="mt-1 text-muted-foreground">{card.snippet}</p>
+              {card.url && (
+                <a href={card.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-blue-600 hover:underline">
+                  <ExternalLink className="h-3 w-3" /> Manba
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RescuePlanCard({ plan }: { plan: NonNullable<ChatMessage["rescue_plan"]> }) {
   const escalation = escalationLabel(plan.escalation)
   return (
@@ -1313,6 +1359,38 @@ function EscalationStatusCard({ escalation }: { escalation: NonNullable<ChatMess
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function FeedbackButtons({ content }: { content: string }) {
+  const [sent, setSent] = useState<"up" | "down" | null>(null)
+
+  async function submit(rating: "up" | "down") {
+    setSent(rating)
+    try {
+      await api.aiFeedback({ message_content: content, rating })
+    } catch {
+      // silent — non-critical
+    }
+  }
+
+  if (sent) {
+    return (
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {sent === "up" ? "👍 Rahmat!" : "👎 Tushundim, yaxshilaymiz"}
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-1 flex gap-1">
+      <button type="button" onClick={() => submit("up")} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Thumbs up">
+        <ThumbsUp className="size-3.5" />
+      </button>
+      <button type="button" onClick={() => submit("down")} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Thumbs down">
+        <ThumbsDown className="size-3.5" />
+      </button>
     </div>
   )
 }

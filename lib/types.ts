@@ -150,6 +150,9 @@ export type ChatMessage = {
   timestamp: string
   risk_flag?: boolean
   requires_urgent_help?: boolean
+  evidence_cards?: Array<{ source: string; title: string; snippet: string; url?: string | null; confidence: number }>
+  safety_level?: "safe" | "caution" | "warning" | "critical"
+  intent?: string
   suggested_actions?: { id?: string; label: string; action: string }[]
   dialogue_reason?:
     | "side_effect"
@@ -460,6 +463,16 @@ export type FamilyMember = {
   phone: string
   relationship: string
   avatar?: string
+}
+
+export type PatientNotification = {
+  id: number
+  type: string
+  channel: string
+  message: string
+  related_data: Record<string, unknown> | null
+  is_read: boolean
+  sent_at: string | null
 }
 
 export type DoctorPatient = {
