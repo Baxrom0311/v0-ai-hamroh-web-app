@@ -3,6 +3,7 @@
 import type { PatientNotification, User, UserRole } from "./types"
 
 export const AUTH_TOKEN_KEY = "noskipai-token"
+export const USER_CACHE_KEY = "noskipai-user"
 
 function resolveApiBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_API_URL?.trim()
@@ -770,6 +771,15 @@ function storedToken() {
   return window.localStorage.getItem(AUTH_TOKEN_KEY)
 }
 
+function handleSessionExpired() {
+  if (typeof window === "undefined") return
+  window.localStorage.removeItem(AUTH_TOKEN_KEY)
+  window.localStorage.removeItem(USER_CACHE_KEY)
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login"
+  }
+}
+
 function errorMessage(body: unknown, fallback: string) {
   if (body && typeof body === "object") {
     const maybe = body as { error?: { message?: string }; detail?: { message?: string } | string }
@@ -806,6 +816,10 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(`Backend JSON qaytarmadi (${response.status}, ${contentType}). API URL noto'g'ri bo'lishi mumkin: ${API_BASE_URL}${path}`)
   }
   if (!response.ok) {
+    const isAuthEndpoint = path.startsWith("/auth/login") || path.startsWith("/auth/register")
+    if (response.status === 401 && !isAuthEndpoint) {
+      handleSessionExpired()
+    }
     throw new Error(errorMessage(body, `HTTP ${response.status}`))
   }
   if ("data" in body) return body.data

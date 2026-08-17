@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import type { User, UserRole } from "../types"
-import { api, setStoredToken } from "../api"
+import { AUTH_TOKEN_KEY, USER_CACHE_KEY, api, setStoredToken } from "../api"
 
 type AuthContextValue = {
   user: User | null
@@ -25,7 +25,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const STORAGE_KEY = "noskipai-user"
+const STORAGE_KEY = USER_CACHE_KEY
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const raw = window.localStorage.getItem(STORAGE_KEY)
         if (raw && !cancelled) setUser(JSON.parse(raw))
-        const token = window.localStorage.getItem("noskipai-token")
+        const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
         if (!token) return
         const profile = await api.me()
         if (!cancelled) {

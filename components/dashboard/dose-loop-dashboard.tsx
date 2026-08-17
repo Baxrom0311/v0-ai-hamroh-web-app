@@ -87,32 +87,8 @@ export function DoseLoopDashboard() {
   }
 
   useEffect(() => {
-    let cancelled = false
-    async function run() {
-      setLoading(true)
-      setError(null)
-      try {
-        const [today, analyticsData, riskData, intelligenceData] = await Promise.all([
-          api.todayDoses(),
-          api.patientAnalytics().catch(() => null),
-          api.currentRisk().catch(() => null),
-          api.medicationIntelligence(true).catch(() => null),
-        ])
-        if (cancelled) return
-        setDoses(sortDoses(today))
-        setAnalytics(analyticsData)
-        setRisk(riskData)
-        setMedicationIntelligence(intelligenceData)
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Dashboard yuklanmadi")
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    run()
-    return () => {
-      cancelled = true
-    }
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const nextDose = useMemo(() => doses.find((dose) => !COMPLETED_STATUSES.has(dose.status)) ?? null, [doses])
